@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "server-monitor-agent"
+version = "0.0.1"
+authors = [
+  { name="Mark" },
+]
+maintainers = [
+  { name="Mark" },
+]
+description = "A simple Python application for running checks on a server and sending formatted notifications."
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: System Administrators",
+    "Topic :: System :: Monitoring",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/qcif/server-monitor-agent"
+"Bug Tracker" = "https://github.com/qcif/server-monitor-agent/issues"
