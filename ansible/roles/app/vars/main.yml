@@ -1,0 +1,14 @@
+---
+# Set these to match your local dev
+custom_timezone: Australia/Brisbane
+
+# apt
+ubuntu_apt_source_mirror: https://mirror.aarnet.edu.au/pub/ubuntu/archive
+ubuntu_apt_source_mirror_security: http://security.ubuntu.com/ubuntu
+
+ubuntu_package_source_file: /etc/apt/sources.list
+
+# general
+guest_data_dir: /home/{{ guest_user_name }}/data
+guest_venv_dir: /home/{{ guest_user_name }}/venv
+app_venv_bin_path: "{{ guest_venv_dir }}/bin"

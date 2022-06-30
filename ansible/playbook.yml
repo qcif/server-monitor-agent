@@ -1,0 +1,6 @@
+---
+- hosts: all
+  tasks:
+    - name: app role
+      ansible.builtin.import_role:
+        name: app

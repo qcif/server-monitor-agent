@@ -1,0 +1,12 @@
+# Ubuntu packages
+# Officially supported: main restricted.
+# Community supported: universe multiverse.
+# Package updates are provided in the standard repository and the -updates repository.
+deb {{ ubuntu_apt_source_mirror }} {{ ansible_distribution_release }} main restricted universe multiverse
+deb {{ ubuntu_apt_source_mirror }} {{ ansible_distribution_release }}-updates main restricted universe multiverse
+
+# Security updates direct from Ubuntu
+deb {{ ubuntu_apt_source_mirror_security }} {{ ansible_distribution_release }}-security main restricted universe multiverse
+
+# Back-ported package updates
+deb {{ ubuntu_apt_source_mirror }} {{ ansible_distribution_release }}-backports main restricted universe multiverse

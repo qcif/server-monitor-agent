@@ -27,3 +27,46 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/qcif/server-monitor-agent"
 "Bug Tracker" = "https://github.com/qcif/server-monitor-agent/issues"
+
+
+[project.scripts]
+server-monitor-agent = 'server_monitor_agent.cmd.entry:main'
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra --quiet"
+pythonpath = [
+  "src"
+]
+testpaths = [
+    "tests"
+]
+
+[tool.coverage.run]
+# "Specifying the source option enables coverage.py to report on unexecuted files,
+# since it can search the source tree for files that haven’t been measured at all."
+source = [
+    'src'
+]
+omit = [
+    '*/site-packages/*',
+    'tests/*',
+]
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.html]
+directory = "coverage-html"
+
+[[tool.mypy.overrides]]
+module = "colorama.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "psutil.*"
+ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+src_paths = ["src"]
