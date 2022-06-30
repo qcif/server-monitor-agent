@@ -1,0 +1,63 @@
+top_level_fail:
+  hello:
+    type: blah
+check:
+  check_item_fail:
+    type: unknown-type
+  check_item_prop_missing:
+    type: instance-memory-status
+  check_item_extra_prop:
+    type: systemd-unit-status
+    name: ufw.service
+    something: else
+  check_item_invalid_text_compare1:
+    type: web-app-status
+    url: https://api.github.com/octocat
+    headers:
+      content_type:
+        contains: text/plain
+    content: []
+  check_item_invalid_text_compare2:
+    type: web-app-status
+    url: https://api.github.com/octocat
+    headers:
+      content_type: []
+    content:
+      contains: 'MMMMM'
+  check_item_invalid_text_compare3:
+    type: file-status
+    path: /var/log/apt/history.log
+    state: present
+    content:
+      - error
+    age:
+      - not_newer: now
+  check_item_invalid_date_compare1:
+    type: file-status
+    path: /var/log/apt/history.log
+    state: present
+    content: []
+    age:
+      - not_newer
+  check_item_invalid_date_compare2:
+    type: file-status
+    path: /var/log/apt/history.log
+    state: present
+    content: []
+    age:
+      - not_newer: something
+
+notify:
+  test_user_message:
+    type: logged-in-users
+    user_group: vagrant
+  test_email:
+    type: email
+    address: example@example.com
+  statuscake_agent:
+    type: statuscake-agent
+  testing_slack:
+    type: slack
+    webhook: 'https://example.com/services'
+  blah:
+    type: blah

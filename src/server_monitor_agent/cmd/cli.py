@@ -4,9 +4,11 @@
 import argparse
 import logging
 import sys
+from pathlib import Path
 from typing import List, Optional
 
 from server_monitor_agent.cmd.check import Check
+from server_monitor_agent.cmd.config import Config
 from server_monitor_agent.cmd.list_entries import ListEntries
 from server_monitor_agent.cmd.notify import Notify
 
@@ -107,6 +109,7 @@ class Cli:
             help=f"Send the output to the given file path. {self._msg_exclusive}",
         )
         self._add_log_level(parser)
+        self._add_config(parser)
         parser.set_defaults(func=self.run_check)
         return parser
 
@@ -151,6 +154,7 @@ class Cli:
             help=f"Get the input from the given file path. {self._msg_exclusive}",
         )
         self._add_log_level(parser)
+        self._add_config(parser)
         parser.set_defaults(func=self.run_notify)
         return parser
 
@@ -159,6 +163,7 @@ class Cli:
 
         descr = "List all the check and notify entries."
         parser = sub_parser.add_parser("list", help=descr, description=descr)
+        self._add_config(parser)
         parser.set_defaults(func=self.run_list)
         return parser
 
@@ -218,13 +223,16 @@ class Cli:
     def run_check(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
         """Run the check command."""
 
+        config = Config(args.config)
+        config_data = config.load()
+
         name = args.name
         fmt = args.format
         std_out = args.std_out
         std_err = args.std_err
         write_file = args.write_file
 
-        p = Check()
+        p = Check(config_data)
         success, detail = p.run(
             name=name,
             fmt=fmt,
@@ -237,6 +245,9 @@ class Cli:
     def run_notify(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
         """Run the notify command."""
 
+        config = Config(args.config)
+        config_data = config.load()
+
         name = args.name
         level = args.level
         fmt = args.format
@@ -244,7 +255,7 @@ class Cli:
         std_err = args.std_err
         read_file = args.read_file
 
-        p = Notify()
+        p = Notify(config_data)
         success, detail = p.run(
             name=name,
             level=level,
@@ -256,7 +267,10 @@ class Cli:
         return success, detail
 
     def run_list(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
-        list_entries = ListEntries()
+        config = Config(args.config)
+        config_data = config.load()
+
+        list_entries = ListEntries(config_data)
         success, detail = list_entries.run()
         return success, detail
 
@@ -266,6 +280,15 @@ class Cli:
             choices=["critical", "error", "warning", "info", "debug"],
             default="info",
             help="Set the log level. Default is info.",
+        )
+
+    def _add_config(self, p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "--config",
+            type=Path,
+            default=".server-monitor-agent.yml",
+            help="Specify the path to the config file. "
+            "Default is ./.server-monitor-agent.yml",
         )
 
     def _run_command(self, args, parsed_args):

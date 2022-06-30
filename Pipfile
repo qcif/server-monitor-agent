@@ -8,6 +8,7 @@ requests = "<3"
 colorama = "<1"
 jsonschema = "<5"
 psutil = "<6"
+pyyaml = "<7"
 
 [dev-packages]
 pip = "*"

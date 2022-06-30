@@ -1,0 +1,55 @@
+check:
+  instance_cpu_status:
+    type: instance-cpu-status
+    threshold: 80
+  instance_memory_status:
+    type: instance-memory-status
+    threshold: 80
+  instance_disk_status:
+    type: instance-disk-status
+    threshold: 80
+    path: '/'
+    device: '/dev/sda3'
+    uuid: '181d63cf-913b-4f0e-a279-6aeb32aa70a1'
+    label: ''
+  ufw_status:
+    type: systemd-unit-status
+    name: ufw.service
+  logrotate_status:
+    type: systemd-unit-status
+    name: logrotate.timer
+  network_online_status:
+    type: systemd-unit-status
+    name: network-online.target
+  github_octocat_status:
+    type: web-app-status
+    url: https://api.github.com/octocat
+    headers:
+      content_type:
+        - contains: text/plain
+    content:
+      - contains: 'MMMMM'
+  apt_history_file:
+    type: file-status
+    path: /var/log/apt/history.log
+    state: present
+    content:
+      - not_contains: error
+    age:
+      - not_newer: now
+  consul_container:
+    type: docker-container-status
+    name: consul
+
+notify:
+  test_user_message:
+    type: logged-in-users
+    user_group: vagrant
+  test_email:
+    type: email
+    address: example@example.com
+  statuscake_agent:
+    type: statuscake-agent
+  testing_slack:
+    type: slack
+    webhook: 'https://example.com/services'

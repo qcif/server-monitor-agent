@@ -2,8 +2,6 @@ import math
 from dataclasses import dataclass
 from datetime import datetime
 
-import psutil
-
 
 class Web:
     pass
@@ -26,6 +24,8 @@ class StatusCakePayload:
 
 class StatusCake:
     def calc_payload(self) -> StatusCakePayload:
+        import psutil
+
         interval = 2.0
 
         ping = ""
@@ -78,6 +78,8 @@ class StatusCake:
         )
 
     def _network(self):
+        import psutil
+
         # as a very simple way to choose, pick the interface with the most data sent
         item_info = None
         item_name = None
@@ -93,6 +95,8 @@ class StatusCake:
         }
 
     def _processes(self):
+        import psutil
+
         item_sep = ":::"
         attr_sep = "|"
 
