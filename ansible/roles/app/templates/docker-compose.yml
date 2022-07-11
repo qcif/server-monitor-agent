@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  email:
+    container_name: 'email'
+    image: 'maildev/maildev:latest'
+    ports:
+      - '1080:1080'
+      - '1025:1025'
+    expose:
+      - '1080'
+      - '1025'
+    restart: 'no'
+    logging:
+      driver: 'journald'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  consul:
+    container_name: 'consul'
+    image: 'consul:latest'
+    ports:
+      - '8600:8600'
+      - '8500:8500'
+      - '8502:8502'
+      - '8301:8301'
+      - '8302:8302'
+      - '8300:8300'
+    expose:
+      - '8600'
+      - '8500'
+      - '8502'
+      - '8301'
+      - '8302'
+      - '8300'
+    restart: 'no'
+    environment:
+      'CONSUL_BIND_INTERFACE': 'eth0'
+    logging:
+      driver: 'journald'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

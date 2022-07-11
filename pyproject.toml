@@ -30,7 +30,7 @@ classifiers = [
 
 
 [project.scripts]
-server-monitor-agent = 'server_monitor_agent.cmd.entry:main'
+server-monitor-agent = 'server_monitor_agent.entry:main'
 
 [tool.pytest.ini_options]
 minversion = "7.0"

@@ -1,151 +1,184 @@
-import math
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from typing import Any
 
+import requests
 
-class Web:
-    pass
+from server_monitor_agent.common import (
+    TextCompareEntry,
+    ConfigEntryMixin,
+    RunArgs,
+    ResultMixin,
+)
+from server_monitor_agent.common import ProgramMixin
 
 
 @dataclass
-class StatusCakePayload:
-    rx: int
-    tx: int
-    process: str
-    drives: str
-    ping: str
-    freeMem: int
-    MemTotal: int
-    cpuUse: float
-    uptime: int
-    hdd: int
-    thdd: int
+class UrlHeadersEntry:
+    name: str
+    comparisons: list[TextCompareEntry]
+
+    @classmethod
+    def load(cls, **kwargs) -> "UrlHeadersEntry":
+        kwargs["comparisons"] = [
+            TextCompareEntry.load(comparison=k, value=v)
+            for i in kwargs.get("comparisons", [])
+            for k, v in i.items()
+        ]
+        return cls(**kwargs)
 
 
-class StatusCake:
-    def calc_payload(self) -> StatusCakePayload:
-        import psutil
+@dataclass
+class UrlRequestEntry:
+    url: str
+    method: str
+    headers: dict[str, str] = field(default_factory=dict)
 
-        interval = 2.0
 
-        ping = ""
+@dataclass
+class UrlResponseEntry:
+    status_code: int
+    headers: list[UrlHeadersEntry]
+    content: list[TextCompareEntry]
 
-        uptime = int(datetime.now().timestamp() - psutil.boot_time())
+    @classmethod
+    def load(cls, **kwargs) -> "UrlResponseEntry":
+        kwargs["headers"] = [
+            UrlHeadersEntry.load(name=k, comparisons=v)
+            for k, v in kwargs.get("headers", {}).items()
+        ]
+        kwargs["content"] = [
+            TextCompareEntry.load(comparison=k, value=v)
+            for i in kwargs.get("content", [])
+            for k, v in i.items()
+        ]
+        return cls(**kwargs)
 
-        memory = psutil.virtual_memory()
-        mem_free = int(memory.available / 1024)
-        mem_total = int(memory.total / 1024)
 
-        hdd = 0
-        thdd = 0
-        drives = []
-        for partition in psutil.disk_partitions():
-            usage = psutil.disk_usage(partition.mountpoint)
-            usage_total = usage.total / 1024
-            usage_used = usage.used / 1024
+@dataclass
+class CheckUrlEntry(ConfigEntryMixin):
+    request: UrlRequestEntry
+    response: UrlResponseEntry
+    group: str = "check"
+    type: str = "web-app-status"
 
-            usage_total_g = math.ceil(usage_total / pow(1024, 3))
-            usage_used_g = math.ceil(usage_used / pow(1024, 3))
+    @classmethod
+    def load(cls, **kwargs) -> "CheckUrlEntry":
+        kwargs["request"] = UrlRequestEntry(**kwargs.get("request", {}))
+        kwargs["response"] = UrlResponseEntry.load(**kwargs.get("response", {}))
+        return cls(**kwargs)
 
-            thdd += usage_total
-            hdd += usage_used
-            drives.append(
-                "|".join([f"{usage_used_g}G", f"{usage_total_g}G", partition.device])
-            )
-        drive_str = ":".join(drives) + ":"
+    def operation(self, run_args: RunArgs) -> None:
+        # run_args
+        # cmd_io = {str} 'std_out'
+        # file_path = {NoneType} None
+        # fmt = {str} 'agent'
+        # group = {str} 'check'
+        # is_file = {bool} False
+        # is_std_err = {bool} False
+        # is_std_io = {bool} True
+        # level = {NoneType} None
+        # name = {str} 'github_octocat_status'
+        # std_err = {bool} False
+        # std_io = {bool} True
 
-        first = self._network()
-        cpu_use = psutil.cpu_percent(interval=interval)
-        second = self._network()
-
-        rx = int((second["rx"] - first["rx"]) / (interval * 1024))
-        tx = int((second["tx"] - first["tx"]) / (interval * 1024))
-
-        process = self._processes()
-
-        return StatusCakePayload(
-            rx=rx,
-            tx=tx,
-            process=process,
-            drives=drive_str,
-            ping=ping,
-            freeMem=mem_free,
-            MemTotal=mem_total,
-            cpuUse=cpu_use,
-            uptime=uptime,
-            hdd=int(hdd),
-            thdd=int(thdd),
+        # self
+        # group = {str} 'check'
+        # key = {str} 'github_octocat_status'
+        # request = {UrlRequestEntry} UrlRequestEntry(url='https://api.github.com/octocat', method='GET', headers={'test_header': 'test header value'})
+        #  headers = {dict: 1} {'test_header': 'test header value'}
+        #  method = {str} 'GET'
+        #  url = {str} 'https://api.github.com/octocat'
+        # response = {UrlResponseEntry} UrlResponseEntry(status_code=200, headers=[UrlHeadersEntry(name='content_type', comparisons=[TextCompareEntry(comparison='contains', value='text/plain')])], content=[TextCompareEntry(comparison='contains', value='MMMMM')])
+        #  content = {list: 1} [TextCompareEntry(comparison='contains', value='MMMMM')]
+        #  headers = {list: 1} [UrlHeadersEntry(name='content_type', comparisons=[TextCompareEntry(comparison='contains', value='text/plain')])]
+        #  status_code = {int} 200
+        # type = {str} 'web-app-status'
+        method = self.request.method.lower()
+        url = self.request.url
+        headers = dict(
+            (k.replace("_", "-").lower(), v) for k, v in self.request.headers.items()
         )
 
-    def _network(self):
-        import psutil
+        web_program = WebProgram()
+        response_check = web_program.url(
+            method,
+            url,
+            headers,
+            self.response.status_code,
+            self.response.content,
+            self.response.headers,
+        )
 
-        # as a very simple way to choose, pick the interface with the most data sent
-        item_info = None
-        item_name = None
-        for name, info in psutil.net_io_counters(pernic=True).items():
-            if not item_info or info.bytes_sent > item_info.bytes_sent:
-                item_name = name
-                item_info = info
+        pass
 
-        return {
-            "network_name": item_name,
-            "rx": item_info.bytes_recv,
-            "tx": item_info.bytes_sent,
-        }
 
-    def _processes(self):
-        import psutil
+@dataclass
+class NotifyEmailEntry(ConfigEntryMixin):
+    key: str
+    address: str
+    group: str = "notify"
+    type: str = "email"
 
-        item_sep = ":::"
-        attr_sep = "|"
+    def operation(self, run_args: RunArgs) -> None:
+        item = self._get_input(run_args)
+        raise NotImplementedError()
 
-        result = []
 
-        # USER|PID|%CPU|%MEM|VSZ|RSS|COMMAND:::
-        attrs = {
-            "pid": "PID",
-            "memory_percent": "%MEM",
-            "name": "COMMAND",
-            "cmdline": "COMMAND",
-            "cpu_percent": "%CPU",
-            "memory_info": ["VSZ", "RSS"],
-            "username": "USER",
-        }
-        for p in psutil.process_iter(list(attrs.keys()), ad_value=None):
-            info = p.info
+@dataclass
+class UrlResponseResult(ResultMixin):
+    match_status: bool
+    match_content: list[dict]
+    match_headers: list[dict]
 
-            user = info["username"] or "(unknown)"
-            if not user and psutil.POSIX:
-                try:
-                    user = p.uids()[0]
-                except psutil.Error:
-                    pass
-            if user and psutil.WINDOWS and "\\" in user:
-                user = user.split("\\")[1]
-            user = user[:9]
-            pid = info["pid"]
-            vms = info["memory_info"].vms or 0
-            rss = info["memory_info"].rss or 0
-            memp = (
-                round(info["memory_percent"], 1)
-                if info["memory_percent"] is not None
-                else ""
-            )
-            cpup = (
-                round(info["memory_percent"], 1)
-                if info["memory_percent"] is not None
-                else ""
+
+class WebProgram(ProgramMixin):
+    def url(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, Any],
+        expected_status: int,
+        expected_content: list[TextCompareEntry],
+        expected_headers: list[UrlHeadersEntry],
+    ):
+        """Request a url."""
+
+        req = requests.request(method, url, headers=headers)
+        headers = req.headers
+        match_status = req.status_code == expected_status
+        response_content = req.text
+
+        match_content = []
+        for expected_item in expected_content:
+            match_content.append(
+                {
+                    "value": expected_item.value,
+                    "comparison": expected_item.comparison,
+                    "outcome": expected_item.compare(response_content),
+                }
             )
 
-            if info["cmdline"]:
-                cmdline = " ".join(info["cmdline"])
-            else:
-                cmdline = info["name"]
-
-            result.append(
-                attr_sep.join(
-                    [user, str(pid), str(cpup), str(memp), str(vms), str(rss), cmdline]
+        match_headers = []
+        for expected_header in expected_headers:
+            for expected_item in expected_header.comparisons:
+                value = headers.get(expected_header.name)
+                match_headers.append(
+                    {
+                        "header": expected_header.name,
+                        "value": expected_item.value,
+                        "comparison": expected_item.comparison,
+                        "outcome": expected_item.compare(value),
+                    }
                 )
-            )
-        return item_sep.join(result)
+
+        return UrlResponseResult(
+            exit_code=req.status_code,
+            match_status=match_status,
+            match_content=match_content,
+            match_headers=match_headers,
+        )
+
+    def email(self):
+        """Send an email."""
+        # https://docs.python.org/3.10/library/email.examples.html
+        raise NotImplementedError()

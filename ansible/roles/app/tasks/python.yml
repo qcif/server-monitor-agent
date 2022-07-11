@@ -1,0 +1,40 @@
+- name: Install the Python PPA
+  become_user: root
+  ansible.builtin.apt_repository:
+    repo: ppa:deadsnakes/ppa
+
+- name: Update apt packages
+  become_user: root
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install required dependencies
+  become_user: root
+  ansible.builtin.apt:
+    state: present
+    name:
+      - unzip
+      - 'python{{ python_version }}'
+      - 'python{{ python_version }}-venv'
+      - 'python{{ python_version }}-dev'
+
+- name: Create Python 3 venv
+  ansible.builtin.command: 'python{{ python_version }} -m venv {{ guest_venv_dir }}'
+  args:
+    creates: "{{ guest_venv_dir }}"
+
+- name: Update package tools in Python venv
+  ansible.builtin.command:
+    cmd: "{{ app_venv_bin_path }}/pip install -U {{ item }}"
+  register: pip_install_result
+  changed_when: "'Successfully installed ' + item in pip_install_result.stdout"
+  loop:
+    - pip
+    - setuptools
+    - wheel
+
+- name: Install app dependencies
+  ansible.builtin.command:
+    cmd: "{{ app_venv_bin_path }}/pip install -U -r {{ guest_src_dir }}/requirements.txt -r {{ guest_src_dir }}/requirements-dev.txt"
+  register: pip_install_requirements_result
+  changed_when: "'Successfully installed ' in pip_install_requirements_result.stdout"

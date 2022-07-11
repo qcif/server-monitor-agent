@@ -23,23 +23,33 @@ check:
     name: network-online.target
   github_octocat_status:
     type: web-app-status
-    url: https://api.github.com/octocat
-    headers:
-      content_type:
-        - contains: text/plain
-    content:
-      - contains: 'MMMMM'
-  apt_history_file:
+    request:
+      url: https://api.github.com/octocat
+      method: GET
+      headers:
+        test_header: test header value
+    response:
+      status_code: 200
+      headers:
+        content_type:
+          - contains: text/plain
+      content:
+        - contains: 'MMMMM'
+  bashrc_file:
     type: file-status
-    path: /var/log/apt/history.log
+    path: /etc/bash.bashrc
     state: present
     content:
       - not_contains: error
-    age:
-      - not_newer: now
+  missing_file:
+    type: file-status
+    path: /does/not/exist
+    state: absent
   consul_container:
     type: docker-container-status
     name: consul
+    state: running
+    health: ignore
 
 notify:
   test_user_message:

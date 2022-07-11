@@ -7,15 +7,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from server_monitor_agent.cmd.check import Check
-from server_monitor_agent.cmd.config import Config
-from server_monitor_agent.cmd.list_entries import ListEntries
-from server_monitor_agent.cmd.notify import Notify
+from server_monitor_agent.common import ReportMixin, LoggingMixin, RunArgs
+from server_monitor_agent.core.manage import Manager
 
 CustomSubParserAction = argparse._SubParsersAction
 
 
-class Cli:
+class Cli(LoggingMixin):
     """Build and run a command line interface."""
 
     name = "server-monitor-agent"
@@ -90,21 +88,23 @@ class Cli:
         )
         parser.add_argument(
             "--format",
-            choices=["agent", "plain"],
+            choices=["agent"],
             default="agent",
             help="The format of the output. Default is agent json format.",
         )
-        parser.add_argument(
+
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
             "--std-out",
             action="store_true",
             help=f"Send the output to standard out. {self._msg_exclusive}",
         )
-        parser.add_argument(
+        group.add_argument(
             "--std-err",
             action="store_true",
             help=f"Send the output to standard error. {self._msg_exclusive}",
         )
-        parser.add_argument(
+        group.add_argument(
             "--write-file",
             help=f"Send the output to the given file path. {self._msg_exclusive}",
         )
@@ -130,26 +130,23 @@ class Cli:
         )
         parser.add_argument(
             "--format",
-            choices=["agent", "plain", "consul-watch"],
+            choices=["agent", "consul-watch"],
             default="agent",
             help="The format of the output. Default is agent json format.",
         )
         parser.add_argument(
             "--level",
-            choices=["pass", "warn", "critical"],
+            choices=ReportMixin.report_choices(),
             help="The notification level when not specified in the input content.",
         )
-        parser.add_argument(
+
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
             "--std-in",
             action="store_true",
             help=f"Get the output from standard in. {self._msg_exclusive}",
         )
-        parser.add_argument(
-            "--std-err",
-            action="store_true",
-            help=f"Get the input from standard error. {self._msg_exclusive}",
-        )
-        parser.add_argument(
+        group.add_argument(
             "--read-file",
             help=f"Get the input from the given file path. {self._msg_exclusive}",
         )
@@ -163,6 +160,7 @@ class Cli:
 
         descr = "List all the check and notify entries."
         parser = sub_parser.add_parser("list", help=descr, description=descr)
+        self._add_log_level(parser)
         self._add_config(parser)
         parser.set_defaults(func=self.run_list)
         return parser
@@ -200,15 +198,8 @@ class Cli:
             if parsed_args and hasattr(parsed_args, "log_level")
             else None
         )
-        settings = {
-            "critical": logging.CRITICAL,
-            "error": logging.ERROR,
-            "warning": logging.WARNING,
-            "info": logging.INFO,
-            "debug": logging.DEBUG,
-        }
-        if log_level and log_level in settings:
-            logging.root.setLevel(settings[log_level])
+        if log_level and log_level in self.logging_choices():
+            logging.root.setLevel(self.logging_value(log_level))
 
         # run command
         success, detail = self._run_command(args, parsed_args)
@@ -220,64 +211,54 @@ class Cli:
         self._logger.warning(f"Not implemented '{args}'.")
         return False, None
 
-    def run_check(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
+    def run_check(self, args: argparse.Namespace):
         """Run the check command."""
-
-        config = Config(args.config)
-        config_data = config.load()
-
-        name = args.name
-        fmt = args.format
-        std_out = args.std_out
-        std_err = args.std_err
-        write_file = args.write_file
-
-        p = Check(config_data)
-        success, detail = p.run(
-            name=name,
-            fmt=fmt,
-            std_out=std_out,
-            std_err=std_err,
-            write_file=write_file,
+        self._run_func(
+            RunArgs(
+                group="check",
+                name=args.name,
+                level=None,
+                fmt=args.format,
+                std_io=args.std_out,
+                std_err=args.std_err,
+                file_path=args.write_file,
+            ),
+            config_path=args.config,
         )
-        return success, detail
 
-    def run_notify(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
+    def run_notify(self, args: argparse.Namespace):
         """Run the notify command."""
-
-        config = Config(args.config)
-        config_data = config.load()
-
-        name = args.name
-        level = args.level
-        fmt = args.format
-        std_in = args.std_in
-        std_err = args.std_err
-        read_file = args.read_file
-
-        p = Notify(config_data)
-        success, detail = p.run(
-            name=name,
-            level=level,
-            fmt=fmt,
-            std_int=std_in,
-            std_err=std_err,
-            read_file=read_file,
+        self._run_func(
+            RunArgs(
+                group="notify",
+                name=args.name,
+                level=args.level,
+                fmt=args.format,
+                std_io=args.std_in,
+                std_err=False,
+                file_path=args.read_file,
+            ),
+            config_path=args.config,
         )
-        return success, detail
 
-    def run_list(self, args: argparse.Namespace) -> tuple[bool, Optional[str]]:
-        config = Config(args.config)
-        config_data = config.load()
-
-        list_entries = ListEntries(config_data)
-        success, detail = list_entries.run()
-        return success, detail
+    def run_list(self, args: argparse.Namespace):
+        self._run_func(
+            RunArgs(
+                group="list",
+                name=None,
+                level=None,
+                fmt=None,
+                std_io=True,
+                std_err=False,
+                file_path=None,
+            ),
+            config_path=args.config,
+        )
 
     def _add_log_level(self, p: argparse.ArgumentParser) -> None:
         p.add_argument(
             "--log-level",
-            choices=["critical", "error", "warning", "info", "debug"],
+            choices=LoggingMixin.logging_choices(),
             default="info",
             help="Set the log level. Default is info.",
         )
@@ -291,25 +272,35 @@ class Cli:
             "Default is ./.server-monitor-agent.yml",
         )
 
+    def _run_func(self, run_args: RunArgs, config_path: Path):
+        manager = Manager()
+        manager.process(run_args, config_path)
+
     def _run_command(self, args, parsed_args):
         detail: Optional[str] = None
+
         if self._logger.isEnabledFor(logging.DEBUG):
             self._logger.debug(f"Starting {self.name} in debug mode.")
             self._logger.debug(f"Raw arguments: {' '.join(args)}")
             self._logger.debug(f"Parsed arguments: {parsed_args}")
 
-            success, detail = parsed_args.func(parsed_args)
+            parsed_args.func(parsed_args)
+            success = True
 
             self._logger.debug("Finished parser func with parsed args in debug mode.")
 
         else:
             try:
-                success, detail = parsed_args.func(parsed_args)
+                parsed_args.func(parsed_args)
+                success = True
+
             except Exception as e:
                 success = False
                 detail = f"{type(e).__name__}: {str(e)}"
+
             except SystemExit as e:
                 success = e.code == 0
+                detail = str(e)
 
         # record outcome
         outcome = "succeeded" if success else "failed"

@@ -6,51 +6,47 @@ on:
   pull_request:
     branches: [ "develop" ]
 
-env:
-  PIPENV_VERBOSITY: -1
-
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [ "3.9", "3.10" ]
+        python-version: [ "3.9", "3.10", "3.11-dev" ]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install pipenv
-        run: pipx install pipenv
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pipenv
+          cache: pip
 
       - name: Install dependencies
         run: |
-          pipenv install --dev
+        python -m pip install --upgrade pip setuptools wheel
+        pip install --upgrade -r requirements.txt
+        pip install --upgrade -r requirements-dev.txt
 
-      - name: Run tests
+      - name: Run tests and linters
         run: |
-          pipenv run coverage run -m pytest --doctest-modules --junitxml=junit/test-results-${{ matrix.python-version }}.xml
-          pipenv run coverage report
+          python -X dev -m coverage run -m pytest --tb=line --doctest-modules --junitxml=artifacts-${{ matrix.python-version }}/pytest-coverage.xml
+          python -X dev -m coverage report
+          python -X dev -m mypy --junit-xml artifacts-${{ matrix.python-version }}/mypy.xml src || true
+          python -X dev -m black --check src || true
+          python -X dev -m pylint src || true
+          python -X dev -m pydocstyle src || true
+          python -X dev -m pyright src || true
+          python -X dev -m flake8 src --count --show-source --statistics --exit-zero
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
         with:
-          name: pytest-results-${{ matrix.python-version }}
-          path: junit/test-results-${{ matrix.python-version }}.xml
+          name: artifacts-${{ matrix.python-version }}
+          path: artifacts-${{ matrix.python-version }}/*.xml
         # Use always() to always run this step to publish test results when there are test failures
         if: ${{ always() }}
-
-      - name: Run linters
-        run: |
-          pipenv run flake8 . --count --show-source --statistics
-          pipenv run black --check .
-          pipenv run mypy src
-          pipenv run pylint src
-          pipenv run pydocstyle src

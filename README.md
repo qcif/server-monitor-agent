@@ -12,7 +12,11 @@ It provides a number of commands to do common tasks.
 Gather information about the instance and report the result via 
 exit code and json-formatted output.
 
+This command is intended to be called by consul checks.
+
 ### Notify
 
 Send a message to an alerting service.
 One message contains details about one service.
+
+This command is intended to be triggered by consul watch.

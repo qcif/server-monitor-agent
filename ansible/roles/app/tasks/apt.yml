@@ -1,0 +1,32 @@
+- name: Set the apt sources list to a local mirror
+  become_user: root
+  ansible.builtin.template:
+    src: sources.list
+    dest: "{{ ubuntu_package_source_file }}"
+    force: true
+    backup: false
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+
+- name: Update apt packages
+  become_user: root
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: "yes"
+
+- name: Install required packages
+  become_user: root
+  ansible.builtin.apt:
+    name:
+      - 'ca-certificates'
+      - 'curl'
+      - 'gnupg'
+      - 'lsb-release'
+      -  'ubuntu-keyring'
+    state: 'latest'
+
+- name: Remove any unneeded apt packages
+  become_user: root
+  ansible.builtin.apt:
+    autoremove: true

@@ -5,7 +5,7 @@ import logging
 import sys
 from typing import Optional, List
 
-from server_monitor_agent.cmd.cli import Cli
+from server_monitor_agent.core.cli import Cli
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)-8s]  %(message)s",

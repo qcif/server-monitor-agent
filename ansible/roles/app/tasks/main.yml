@@ -1,82 +1,17 @@
----
-- name: Ensure ufw firewall is disabled, as this is a dev machine
-  become_user: root
-  ufw:
-    state: disabled
+- name: Set up firewall
+  ansible.builtin.import_tasks: firewall.yml
 
-- name: Create required directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    owner: "{{ guest_user_name }}"
-    group: "{{ guest_user_name }}"
-    mode: u=rwx,g=rwx,o=rx
-  loop:
-    - "{{ guest_data_dir }}"
+- name: Set up time
+  ansible.builtin.import_tasks: time.yml
 
-- name: Set the apt sources list to a local mirror
-  become_user: root
-  ansible.builtin.template:
-    src: sources.list
-    dest: "{{ ubuntu_package_source_file }}"
-    force: true
-    backup: false
-    owner: root
-    group: root
-    mode: u=rw,g=r,o=r
+- name: Set up directories and files
+  ansible.builtin.import_tasks: files.yml
 
-- name: Update apt packages
-  become_user: root
-  ansible.builtin.apt:
-    update_cache: true
-    upgrade: "yes"
+- name: Configure and update apt
+  ansible.builtin.import_tasks: apt.yml
 
-- name: Remove any unneeded apt packages
-  become_user: root
-  ansible.builtin.apt:
-    autoremove: true
+- name: Set up Python virtual environment
+  ansible.builtin.import_tasks: python.yml
 
-- name: Install the Python PPA
-  become_user: root
-  ansible.builtin.apt_repository:
-    repo: ppa:deadsnakes/ppa
-
-- name: Update apt packages
-  become_user: root
-  ansible.builtin.apt:
-    update_cache: true
-
-- name: Install required dependencies
-  become_user: root
-  ansible.builtin.apt:
-    state: present
-    name:
-      - unzip
-      - 'python{{ python_version }}'
-      - 'python{{ python_version }}-venv'
-      - 'python{{ python_version }}-dev'
-
-- name: Create Python 3 venv
-  ansible.builtin.command: 'python{{ python_version }} -m venv {{ guest_venv_dir }}'
-  args:
-    creates: "{{ guest_venv_dir }}"
-
-- name: Update package tools in Python venv
-  ansible.builtin.command:
-    cmd: "{{ app_venv_bin_path }}/pip install -U {{ item }}"
-  register: pip_install_result
-  changed_when: "'Successfully installed ' + item in pip_install_result.stdout"
-  loop:
-    - pip
-    - setuptools
-    - wheel
-    - pipenv
-
-- name: Update the timezone
-  become_user: root
-  ansible.builtin.file:
-    src: /usr/share/zoneinfo/{{ custom_timezone }}
-    dest: /etc/localtime
-    owner: root
-    group: root
-    state: link
+- name: Install docker
+  ansible.builtin.import_tasks: docker.yml

@@ -9,6 +9,11 @@ ubuntu_apt_source_mirror_security: http://security.ubuntu.com/ubuntu
 ubuntu_package_source_file: /etc/apt/sources.list
 
 # general
-guest_data_dir: /home/{{ guest_user_name }}/data
-guest_venv_dir: /home/{{ guest_user_name }}/venv
+guest_data_dir: "/home/{{ guest_user_name }}/data"
+guest_venv_dir: "/home/{{ guest_user_name }}/venv"
 app_venv_bin_path: "{{ guest_venv_dir }}/bin"
+
+# docker
+# see https://keyserver.ubuntu.com/pks/lookup?search=docker%40docker.com&fingerprint=on&op=index
+docker_gpg_fingerprint: '9DC858229FC7DD38854AE2D88D81803C0EBFCD88'
+docker_compose_dir: "/home/{{ guest_user_name }}/docker-compose"

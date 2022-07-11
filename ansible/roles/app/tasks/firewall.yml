@@ -1,0 +1,5 @@
+- name: Ensure ufw firewall is disabled, as this is a dev machine
+  become_user: root
+  community.general.ufw:
+    state: disabled
+

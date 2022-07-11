@@ -5,14 +5,17 @@ from dataclasses import dataclass
 class ConsulWatchCheckItem:
     # https://www.consul.io/docs/dynamic-app-config/watches
 
-    node: str
-    check_id: str
-    name: str
-    status: str
-    notes: str
-    output: str
-    service_id: str
-    service_name: str
+    node: str  # consul: node name
+    check_id: str  # consul: unique check id
+    name: str  # consul: displayed name
+    status: str  # consul: check status:
+    # Exit code 0 - Check is 'passing',
+    # Exit code 1 - Check is 'warning',
+    # Any other code - Check is 'critical'
+    notes: str  # consul: opaque to consul - human readable - from watch definition
+    output: str  # consul: output from command
+    service_id: str  # consul: unique service id
+    service_name: str  # consul: non-unique service name
 
     @classmethod
     def from_item(cls, item: dict) -> "ConsulWatchCheckItem":

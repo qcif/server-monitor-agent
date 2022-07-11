@@ -1,0 +1,11 @@
+- name: Create required directories
+  become_user: root
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ guest_user_name }}"
+    group: "{{ guest_user_name }}"
+    mode: u=rwx,g=rwx,o=rx
+  loop:
+    - "{{ guest_data_dir }}"
+    - "{{ docker_compose_dir }}"

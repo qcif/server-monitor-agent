@@ -8,9 +8,6 @@ on:
   schedule:
     - cron: '19 7 * * 5'
 
-env:
-  PIPENV_VERBOSITY: -1
-
 jobs:
   analyze:
     name: Analyze code
@@ -24,25 +21,22 @@ jobs:
       fail-fast: false
       matrix:
         language: [ "python" ]
-        python-version: [ "3.9" ]
+        python-version: [ "3.9", "3.10", "3.11-dev" ]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install pipenv
-      run: pipx install pipenv
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-        cache: pipenv
+        cache: pip
 
     - name: Install dependencies
       run: |
-        pipenv install --dev
-        echo "CODEQL_PYTHON=$(pipenv run which python)" >> $GITHUB_ENV
+        python -m pip install --upgrade pip setuptools wheel
+        pip install -r requirements.txt
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2

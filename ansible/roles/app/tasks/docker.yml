@@ -1,0 +1,109 @@
+---
+- name: Check if apt repo gpg key already exists
+  become_user: root
+  ansible.builtin.stat:
+    path: '/usr/share/keyrings/docker-archive-keyring.gpg'
+  register: docker_apt_repo_gpg_key_check_result
+
+- name: Get apt repo gpg key from url
+  become_user: root
+  ansible.builtin.get_url:
+    url: 'https://download.docker.com/linux/ubuntu/gpg'
+    dest: '/tmp/docker-archive-keyring.gpg'
+    owner: root
+    group: root
+    mode: 'u=rw,g=r,o=r'
+  when: not docker_apt_repo_gpg_key_check_result.stat.exists
+
+- name: Ensure gpg directories are created
+  become_user: root
+  command: 'gpg --list-keys'
+  when: not docker_apt_repo_gpg_key_check_result.stat.exists
+
+- name: Verify gpg key fingerprint
+  become_user: root
+  command: 'gpg --dry-run --quiet --with-colons --import --import-options show-only --keyid-format 0xlong /tmp/docker-archive-keyring.gpg'
+  register: docker_apt_repo_gpg_key_result
+  when: not docker_apt_repo_gpg_key_check_result.stat.exists
+
+- name: Ensure gpg key fingerprint matches
+  become_user: root
+  fail:
+    msg: "Invalid gpg key fingerprint.  Output is '{{ docker_apt_repo_gpg_key_result.stdout }}'."
+  when: not docker_apt_repo_gpg_key_check_result.stat.exists and 
+        (not docker_apt_repo_gpg_key_result or docker_apt_repo_gpg_key_result.stdout.find(':' + docker_gpg_fingerprint + ':') == -1)
+
+- name: Put apt repo gpg key into file for apt
+  become_user: root
+  ansible.builtin.command: 'gpg --dearmor --output /usr/share/keyrings/docker-archive-keyring.gpg /tmp/docker-archive-keyring.gpg'
+  args:
+    creates: '/usr/share/keyrings/docker-archive-keyring.gpg'
+  when: not docker_apt_repo_gpg_key_check_result.stat.exists
+
+- name: Add apt repo source file
+  become_user: root
+  ansible.builtin.template:
+    src: 'docker.list'
+    dest: '/etc/apt/sources.list.d/docker.list'
+    force: true
+    backup: false
+    owner: 'root'
+    group: 'root'
+    mode: 'u=rw,g=r,o=r'
+  register: docker_apt_source_list_result
+
+- name: Update apt cache
+  become_user: root
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_apt_source_list_result.changed
+
+- name: Remove packages
+  become_user: root
+  ansible.builtin.apt:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - docker
+    - docker-engine
+    - docker.io
+    - containerd
+    - runc
+
+- name: Install packages
+  become_user: root
+  ansible.builtin.apt:
+    name: '{{ item }}'
+    state: latest
+  loop:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-compose-plugin
+
+- name: Create the docker group
+  become_user: root
+  group:
+    name: 'docker'
+    state: present
+
+- name: Add vagrant to docker group
+  become_user: root
+  user:
+    name: 'vagrant'
+    append: true
+    groups:
+      - docker
+
+- name: Create docker compose config file
+  ansible.builtin.template:
+    src: 'docker-compose.yml'
+    dest: '{{ docker_compose_dir }}/docker-compose.yml'
+    force: true
+    backup: false
+    owner: '{{ guest_user_name }}'
+    group: '{{ guest_user_name }}'
+    mode: 'u=rw,g=r,o=r'
+
+- name: Start docker-compose services
+  ansible.builtin.command: "docker compose -f {{ docker_compose_dir }}/docker-compose.yml up --detach --wait --remove-orphans --quiet-pull --no-color"

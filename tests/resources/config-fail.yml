@@ -12,40 +12,40 @@ check:
     something: else
   check_item_invalid_text_compare1:
     type: web-app-status
-    url: https://api.github.com/octocat
-    headers:
-      content_type:
-        contains: text/plain
-    content: []
+    request:
+      url: https://api.github.com/octocat
+      method: GET
+    response:
+      headers:
+        content_type:
+          contains: text/plain
+      content: []
   check_item_invalid_text_compare2:
     type: web-app-status
-    url: https://api.github.com/octocat
-    headers:
-      content_type: []
-    content:
-      contains: 'MMMMM'
+    request:
+      url: https://api.github.com/octocat
+      method: GET
+    response:
+      headers:
+        content_type: []
+      content:
+        contains: 'MMMMM'
   check_item_invalid_text_compare3:
     type: file-status
     path: /var/log/apt/history.log
     state: present
     content:
       - error
-    age:
-      - not_newer: now
   check_item_invalid_date_compare1:
     type: file-status
     path: /var/log/apt/history.log
     state: present
     content: []
-    age:
-      - not_newer
   check_item_invalid_date_compare2:
     type: file-status
     path: /var/log/apt/history.log
     state: present
     content: []
-    age:
-      - not_newer: something
 
 notify:
   test_user_message:
