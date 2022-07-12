@@ -77,7 +77,7 @@ class ConfigEntryMixin:
         return cls(**kwargs)
 
     def operation(self, run_args: RunArgs) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError("Must implement 'operation'.")
 
     def _do_output(self, run_args: RunArgs, item: AgentItem) -> None:
         # content

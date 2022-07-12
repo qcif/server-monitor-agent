@@ -2,6 +2,8 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
+import requests
+
 from server_monitor_agent.common import OutputMixin, RunArgs
 from server_monitor_agent.common import ProgramMixin, ConfigEntryMixin
 from server_monitor_agent.core.local import LocalProgram, NetworkResult
@@ -9,15 +11,19 @@ from server_monitor_agent.core.local import LocalProgram, NetworkResult
 
 @dataclass
 class NotifyStatusCakeEntry(ConfigEntryMixin):
+
+    _url = "https://agent.statuscake.com"
+
     def operation(self, run_args: RunArgs) -> None:
 
         # this entry ignores any input provided
         # it collects all data itself
-        # payload = StatusCakeProgram().calc_payload()
+        payload = StatusCakeProgram().calc_payload()
 
         # send data to statuscake url
-
-        raise NotImplementedError()
+        response = requests.post(url=self._url, json=payload)
+        if not response.status_code != 200:
+            raise ValueError(f"Unexpected response from status cake: {response}")
 
     key: str
     group: str = "notify"

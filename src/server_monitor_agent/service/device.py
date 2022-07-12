@@ -7,7 +7,12 @@ from zoneinfo import ZoneInfo
 
 from boltons.strutils import bytes2human
 
-from server_monitor_agent.common import ConfigEntryMixin, ReportMixin, RunArgs
+from server_monitor_agent.common import (
+    ConfigEntryMixin,
+    ReportMixin,
+    RunArgs,
+    ProgramMixin,
+)
 from server_monitor_agent.common import TextCompareEntry
 from server_monitor_agent.core.local import LocalProgram
 from server_monitor_agent.service.agent import AgentItem
@@ -384,4 +389,53 @@ class NotifyLoggedInUsersEntry(ConfigEntryMixin):
 
     def operation(self, run_args: RunArgs) -> None:
         item = self._get_input(run_args)
-        raise NotImplementedError()
+
+        notify_config_entry = self.key
+        notify_config_type = self.type
+
+        users = f"users in group {self.user_group}" if self.user_group else "all users"
+
+        check_name = item.check_name
+        check_type = item.check_type
+        date = item.date
+        description = item.description
+        host_name = item.host_name
+        service_name = item.service_name
+        source_name = item.source_name
+        status_code = item.status_code
+        status_name = item.status_name
+        title = item.title
+
+        message = "\n".join(
+            [
+                f"On {date}, {service_name} (from {source_name}, host {host_name}):",
+                "",
+                title,
+                description,
+                "",
+                f"Sent to {users}",
+                "",
+                f"Status: {status_name} ({status_code})",
+                f"Check: {check_name} ({check_type})",
+                f"Notify: {notify_config_entry} ({notify_config_type})",
+            ]
+        )
+
+        prog = DeviceProgram()
+        prog.local_system_message(self.user_group, message)
+
+
+class DeviceProgram(ProgramMixin):
+    def local_system_message(self, group: Optional[str], message: str) -> None:
+        if not message or not message.strip():
+            raise ValueError("Must provide a message to send.")
+
+        cmd = ["wall", "--timeout", "30"]
+        if group and group.strip():
+            cmd.extend(["--group", group.strip()])
+
+        cmd.append(message)
+
+        result = self._run_cmd(cmd)
+        if result.returncode != 0:
+            raise ValueError(f"Could not send local system message due to :{result}")

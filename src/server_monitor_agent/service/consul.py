@@ -12,7 +12,7 @@ class ConsulWatchCheckItem:
     # Exit code 0 - Check is 'passing',
     # Exit code 1 - Check is 'warning',
     # Any other code - Check is 'critical'
-    notes: str  # consul: opaque to consul - human readable - from watch definition
+    notes: str  # consul: opaque to consul - human-readable - from watch definition
     output: str  # consul: output from command
     service_id: str  # consul: unique service id
     service_name: str  # consul: non-unique service name

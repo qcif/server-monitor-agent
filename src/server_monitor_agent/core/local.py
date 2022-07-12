@@ -223,11 +223,6 @@ class LocalProgram(ProgramMixin):
 
         return output
 
-    def file(self, name: str):
-        #  /proc/filesystems and /lib/modules/$(uname -r)/kernel/fs
-        # file --special-files <name/source>
-        raise NotImplementedError()
-
     def df(self) -> list[DfResult]:
         headers = [
             "source",

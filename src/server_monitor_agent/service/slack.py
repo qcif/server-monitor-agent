@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
+import requests
 from dateparser.timezone_parser import StaticTzInfo
 
 from server_monitor_agent.common import ConfigEntryMixin, ProgramMixin, RunArgs
@@ -17,7 +18,15 @@ class NotifySlackEntry(ConfigEntryMixin):
 
     def operation(self, run_args: RunArgs) -> None:
         item = self._get_input(run_args)
-        raise NotImplementedError()
+
+        # build the slack message
+        prog = SlackProgram()
+        payload = prog.create_message(item)
+
+        # send the post request with json body
+        response = requests.post(url=self.webhook, json=payload)
+        if not response.status_code != 200:
+            raise ValueError(f"Unexpected response from slack: {response}")
 
 
 class SlackProgram(ProgramMixin, ReportMixin, DateTimeMixin):

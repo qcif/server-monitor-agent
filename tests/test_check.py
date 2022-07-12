@@ -177,6 +177,7 @@ def test_check_systemctl_show(caplog, capsys, monkeypatch):
                 "log3": "Stopped Daily rotation of log files.",
                 "log4": "Started Daily rotation of log files.",
                 "log5": "logrotate.timer: Succeeded.",
+                "log6": "Stopped Daily rotation of log files.",
             },
         },
         indent=2,

@@ -1,15 +1,18 @@
 from dataclasses import dataclass, field
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from smtplib import SMTP_SSL, SMTPException
 from typing import Any
 
 import requests
 
+from server_monitor_agent.common import ProgramMixin
 from server_monitor_agent.common import (
     TextCompareEntry,
     ConfigEntryMixin,
     RunArgs,
     ResultMixin,
 )
-from server_monitor_agent.common import ProgramMixin
 
 
 @dataclass
@@ -68,31 +71,6 @@ class CheckUrlEntry(ConfigEntryMixin):
         return cls(**kwargs)
 
     def operation(self, run_args: RunArgs) -> None:
-        # run_args
-        # cmd_io = {str} 'std_out'
-        # file_path = {NoneType} None
-        # fmt = {str} 'agent'
-        # group = {str} 'check'
-        # is_file = {bool} False
-        # is_std_err = {bool} False
-        # is_std_io = {bool} True
-        # level = {NoneType} None
-        # name = {str} 'github_octocat_status'
-        # std_err = {bool} False
-        # std_io = {bool} True
-
-        # self
-        # group = {str} 'check'
-        # key = {str} 'github_octocat_status'
-        # request = {UrlRequestEntry} UrlRequestEntry(url='https://api.github.com/octocat', method='GET', headers={'test_header': 'test header value'})
-        #  headers = {dict: 1} {'test_header': 'test header value'}
-        #  method = {str} 'GET'
-        #  url = {str} 'https://api.github.com/octocat'
-        # response = {UrlResponseEntry} UrlResponseEntry(status_code=200, headers=[UrlHeadersEntry(name='content_type', comparisons=[TextCompareEntry(comparison='contains', value='text/plain')])], content=[TextCompareEntry(comparison='contains', value='MMMMM')])
-        #  content = {list: 1} [TextCompareEntry(comparison='contains', value='MMMMM')]
-        #  headers = {list: 1} [UrlHeadersEntry(name='content_type', comparisons=[TextCompareEntry(comparison='contains', value='text/plain')])]
-        #  status_code = {int} 200
-        # type = {str} 'web-app-status'
         method = self.request.method.lower()
         url = self.request.url
         headers = dict(
@@ -109,7 +87,7 @@ class CheckUrlEntry(ConfigEntryMixin):
             self.response.headers,
         )
 
-        pass
+        raise NotImplementedError()
 
 
 @dataclass
@@ -121,6 +99,37 @@ class NotifyEmailEntry(ConfigEntryMixin):
 
     def operation(self, run_args: RunArgs) -> None:
         item = self._get_input(run_args)
+
+        mail_host = ""
+        mail_port = 0
+        mail_user = ""
+        mail_pass = ""
+        msg_subject = ""
+        msg_from_addr = ""
+        msg_to = []
+        msg_body_text = ""
+        msg_body_html = ""
+
+        prog = WebProgram()
+        email_result = prog.email(
+            mail_host,
+            mail_port,
+            mail_user,
+            mail_pass,
+            msg_subject,
+            msg_from_addr,
+            msg_to,
+            msg_body_text,
+            msg_body_html,
+        )
+        if "error" in email_result:
+            msg = (
+                f"Error sending email: "
+                f"login: '{email_result.get('login', '')}' "
+                f"send: '{email_result.get('send', '')}'"
+            )
+            raise ValueError(msg) from email_result.get("error")
+
         raise NotImplementedError()
 
 
@@ -178,7 +187,50 @@ class WebProgram(ProgramMixin):
             match_headers=match_headers,
         )
 
-    def email(self):
+    def email(
+        self,
+        mail_host: str,
+        mail_port: int,
+        mail_user: str,
+        mail_pass: str,
+        msg_subject: str,
+        msg_from_addr: str,
+        msg_to: list[str],
+        msg_body_text: str,
+        msg_body_html: str,
+    ) -> dict:
         """Send an email."""
-        # https://docs.python.org/3.10/library/email.examples.html
-        raise NotImplementedError()
+
+        # build message
+        # based on https://stackoverflow.com/questions/9087158/amazon-ses-smtp-python-usage
+        # use MIME type is multipart/alternative for AWS SES
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = msg_subject
+        msg["From"] = msg_from_addr
+        msg["To"] = ", ".join(msg_to)
+
+        # Record the MIME types of both parts - text/plain and text/html.
+        part1 = MIMEText(msg_body_text, "plain")
+        part2 = MIMEText(msg_body_html, "html")
+
+        # Attach parts into message container.
+        # According to RFC 2046, the last part of a multipart message, in this case
+        # the HTML message, is best and preferred.
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # send message
+        from_addr = msg_from_addr
+        to_addrs = msg_to
+
+        result = {}
+        try:
+            with SMTP_SSL(mail_host, mail_port) as server:
+                result["login"] = server.login(mail_user, mail_pass)
+                result["send"] = server.sendmail(from_addr, to_addrs, msg.as_string())
+                server.close()
+
+        except SMTPException as e:
+            result["error"] = e
+
+        return result
