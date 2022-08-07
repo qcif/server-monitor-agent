@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 8500, host: 8500
 
   # sync folder using rsync option
-  rsync_exclude_list = %w[.vagrant/ .git/ .idea/ coverage-html/ __pycache__/ venv/]
+  rsync_exclude_list = %w[.vagrant/ .git/ .idea/ coverage-html/ __pycache__/ venv/ .venv/ .tox/ .pytest_cache/]
   config.vm.synced_folder '.', guest_src_dir, type: "rsync", rsync__exclude: rsync_exclude_list
 
   # --- Common Options ---
@@ -96,9 +96,11 @@ Vagrant.configure("2") do |config|
     "#{ansible_venv_dir}/bin/python" -m pip install -U pip
     "#{ansible_venv_dir}/bin/pip" install -U setuptools wheel
     "#{ansible_venv_dir}/bin/pip" install -U lxml
-    "#{ansible_venv_dir}/bin/pip" install -U ansible 'ansible-lint'
+    "#{ansible_venv_dir}/bin/pip" install -U ansible-core ansible-lint
 
-    "#{ansible_venv_dir}/bin/ansible-galaxy" collection install -p /home/vagrant/ansible-collections --upgrade community.general
+    "#{ansible_venv_dir}/bin/ansible-galaxy" collection install \
+        -p /home/vagrant/ansible-collections --upgrade \
+        community.general ansible.posix community.crypto
   SHELL
 
   config.vm.provision "run_ansible", type: "ansible_local" do |ans|

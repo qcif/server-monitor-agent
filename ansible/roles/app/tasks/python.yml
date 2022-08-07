@@ -14,9 +14,23 @@
     state: present
     name:
       - unzip
+      - build-essential
       - 'python{{ python_version }}'
       - 'python{{ python_version }}-venv'
       - 'python{{ python_version }}-dev'
+      - 'python{{ python_version }}'
+      - 'python{{ python_version }}-venv'
+      - 'python{{ python_version }}-dev'
+
+- name: Install python versions for testing
+  become_user: root
+  ansible.builtin.apt:
+    state: present
+    name:
+      - 'python{{ item }}'
+      - 'python{{ item }}-venv'
+      - 'python{{ item }}-dev'
+  loop: '{{ python_versions }}'
 
 - name: Create Python 3 venv
   ansible.builtin.command: 'python{{ python_version }} -m venv {{ guest_venv_dir }}'

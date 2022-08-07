@@ -5,27 +5,29 @@ import pytest
 def no_run_cmd(monkeypatch):
     """Remove method that allows running command for all tests."""
 
-    def run_cmd(self, args):
-        raise ValueError(f"Must set _run_cmd method for '{args}'.")
+    item = "server_monitor_agent.agent.operation.execute_process"
 
-    monkeypatch.setattr("server_monitor_agent.common.ProgramMixin._run_cmd", run_cmd)
+    def run_cmd(args):
+        raise ValueError(f"Must set {item} method for '{args}'.")
+
+    monkeypatch.setattr(item, run_cmd)
 
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
     """Remove requests.sessions.Session.request for all tests."""
-    monkeypatch.delattr("requests.sessions.Session.request")
 
+    item = "requests.sessions.Session.request"
 
-@pytest.fixture(autouse=True)
-def no_smtplib_login(monkeypatch):
-    """Remove smtplib.SMTP_SSL for all tests."""
-    monkeypatch.delattr("smtplib.SMTP.login")
+    def run_cmd(args):
+        raise ValueError(f"Must set {item} method for '{args}'.")
+
+    monkeypatch.setattr(item, run_cmd)
 
 
 @pytest.fixture(autouse=True)
 def replace_psutil_cpu_percent(monkeypatch):
-    """Replace psutil.cpu_percent for all tests."""
+    """Replace psutil.cpu_percent for all tests as it is slow to run."""
 
     def cpu_percent(interval=None, percpu=False):
         # range is 0 -> (usage in percent, e.g. 10%)
