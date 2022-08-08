@@ -183,7 +183,7 @@ def read_file(
 ) -> agent_model.AgentItem:
     # read content
     if not in_target or not in_target.exists():
-        raise ValueError(f"Must provide exiting path to read.")
+        raise ValueError(f"File to read must exist: '{in_target}'.")
 
     content = in_target.read_text(encoding="utf8")
 

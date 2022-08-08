@@ -10,8 +10,23 @@ from server_monitor_agent.cli.command import cli
 @pytest.mark.parametrize(
     "send_arg", ["alert-manager", "file-output", "logged-in-users", "stream-output"]
 )
-def test_disk_module(tmp_path, collect_arg, send_arg):
+def test_disk_module(
+    tmp_path,
+    collect_arg,
+    send_arg,
+    monkeypatch,
+    execute_process_setup,
+    execute_process_unknown,
+    execute_process_timedatectl_show,
+):
     runner = CliRunner(mix_stderr=False)
+
+    execute_process_setup(
+        [
+            execute_process_timedatectl_show,
+            execute_process_unknown,
+        ]
+    )
 
     with runner.isolated_filesystem(temp_dir=tmp_path) as d:
         temp_dir = pathlib.Path(d)
