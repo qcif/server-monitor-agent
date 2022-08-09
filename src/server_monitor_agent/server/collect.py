@@ -12,8 +12,11 @@ from server_monitor_agent.server import model as server_model, send as server_se
     name="cpu",
     epilog="Increase the interval for a more accurate measure, "
     "but it will take longer.",
-    help="Get the overall CPU usage for this device.",
+    help="Get the overall CPU usage for this device. "
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
     short_help="Get the overall CPU usage.",
+    no_args_is_help=False,
+    invoke_without_command=True,
 )
 @click.option(
     "-t",
@@ -42,8 +45,11 @@ def cpu(ctx: click.Context, threshold: int, interval: float):
     name="memory",
     epilog="Note the difference between 'free' (unused memory) and "
     "'available' (used but can be re-used if required).",
-    help="Get the memory usage for this device.",
+    help="Get the memory usage for this device. "
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
     short_help="Get the memory usage.",
+    no_args_is_help=False,
+    invoke_without_command=True,
 )
 @click.option(
     "-t",
@@ -63,8 +69,10 @@ def memory(ctx: click.Context, threshold: int):
 @click.group(
     name="stream-input",
     epilog="",
-    help="Read input from the given stream.",
+    help="Read input from the given stream. " + agent_model.TEXT_CHOOSE_NOTIFICATION,
     short_help="Read input from a stream.",
+    no_args_is_help=False,
+    invoke_without_command=True,
 )
 @click.option(
     "-s",

@@ -34,6 +34,8 @@ OUT_FORMATS = [FORMAT_AGENT]
 STREAM_SOURCES = [STREAM_STDIN]
 STREAM_TARGETS = [STREAM_STDOUT, STREAM_STDERR]
 
+TEXT_CHOOSE_NOTIFICATION = "Choose a notification target from the Commands."
+
 
 @dataclasses.dataclass
 class CollectArgs(abc.ABC):

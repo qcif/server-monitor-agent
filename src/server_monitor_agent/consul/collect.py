@@ -1,13 +1,21 @@
 import click
 
-from server_monitor_agent.agent import io as agent_io
+from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.alert_manager import send as alert_manager_send
 from server_monitor_agent.consul import model as consul_model
 from server_monitor_agent.disk import send as disk_send
 from server_monitor_agent.server import send as server_send
 
 
-@click.group(name="consul-checks")
+@click.group(
+    name="consul-checks",
+    epilog="The config file provides defaults in a file that can be templated.",
+    help="Utility to run checks on a server and send notifications. "
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="consul check short help",
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
 @click.pass_context
 def consul_checks(ctx: click.Context):
     ctx.obj = consul_model.HealthCheckCollectArg()

@@ -8,7 +8,12 @@ from server_monitor_agent.statuscake import model as sc_model
 logger = logging.getLogger(f"{agent_model.APP_NAME_UNDER}.statuscake.send")
 
 
-@click.command(name="statuscake", help="", short_help="")
+@click.command(
+    name="statuscake",
+    epilog="",
+    help="Send sample of server instance details to statuscake.",
+    short_help="Send server details to statuscake.",
+)
 @click.pass_context
 def statuscake(ctx: click.Context):
     """Send status cake sample."""

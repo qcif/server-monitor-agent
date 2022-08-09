@@ -11,6 +11,7 @@ from server_monitor_agent.server import model as server_model
 
 @click.command(
     name="logged-in-users",
+    epilog="",
     help="Send an alert to all users logged in to a server instance.",
     short_help="Send an alert to logged-in users.",
 )
@@ -31,8 +32,9 @@ def logged_in_users(ctx: click.Context, user_group: str):
 
 @click.command(
     name="stream-output",
-    help="Send an alert to all users logged in to a server instance.",
-    short_help="Send an alert to logged-in users.",
+    epilog="",
+    help="Print a notification to an output stream.",
+    short_help="Print to an output stream.",
 )
 @click.option(
     "-t",

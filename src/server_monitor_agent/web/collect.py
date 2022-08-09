@@ -1,14 +1,21 @@
 import click
 from click import Context
 
-from server_monitor_agent.agent import io as agent_io
+from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.alert_manager import send as alert_send
 from server_monitor_agent.disk import send as disk_send
 from server_monitor_agent.server import send as server_send
 from server_monitor_agent.web import model as web_model
 
 
-@click.group(name="web-app")
+@click.group(
+    name="web-app",
+    epilog="",
+    help="Check the response to a url request. " + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="",
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
 @click.pass_context
 def web_app_status(ctx: Context):
     ctx.obj = web_model.WebAppStatusArgs(request=None, response=None)

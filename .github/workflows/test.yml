@@ -28,20 +28,46 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "::group::Pip dependencies"
           python -m pip install --upgrade pip setuptools wheel
           pip install --upgrade -r requirements.txt
           pip install --upgrade -r requirements-dev.txt
+          echo "::endgroup::"
 
       - name: Run tests and linters
         run: |
-          python -X dev -m coverage run -m pytest --tb=line --doctest-modules --junitxml=artifacts-${{ matrix.python-version }}/pytest-coverage.xml || true
+          echo "::group::Tests - Run"
+          python -X dev -m coverage run -m pytest --tb=line --doctest-modules \
+            --junitxml=artifacts-${{ matrix.python-version }}/pytest-coverage.xml || true
+          echo "::endgroup::"
+          
+          echo "::group::Tests - Coverage"
           python -X dev -m coverage report || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - mypy"
           python -X dev -m mypy --junit-xml artifacts-${{ matrix.python-version }}/mypy.xml src || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - black"
           python -X dev -m black --check src || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - pylint"
           python -X dev -m pylint src || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - pydocstyle"
           python -X dev -m pydocstyle src || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - pyright"
           python -X dev -m pyright src || true
+          echo "::endgroup::"
+          
+          echo "::group::Linter - flake8"
           python -X dev -m flake8 src --count --show-source --statistics --exit-zero
+          echo "::endgroup::"
 
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3

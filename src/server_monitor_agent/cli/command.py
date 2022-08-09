@@ -24,7 +24,8 @@ logger = logging.getLogger(agent_model.APP_NAME_UNDER)
 @click.group(
     name=agent_model.APP_NAME_DASH,
     epilog="The config file provides defaults in a file that can be templated.",
-    help="Utility to run checks on a server and send notifications.",
+    help="Utility to run checks on a server and send notifications. "
+    "Choose a data collection source from the Commands.",
     context_settings={"show_default": True},
     # these settings allow for printing help and exiting with 1 if no subcommand
     no_args_is_help=False,

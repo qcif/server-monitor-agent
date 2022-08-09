@@ -1,14 +1,21 @@
 import click
 from click import Context
 
-from server_monitor_agent.agent import io as agent_io
+from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.alert_manager import send as alert_manager_send
 from server_monitor_agent.disk import send as disk_send
 from server_monitor_agent.server import send as server_send
 from server_monitor_agent.systemd import model as systemd_model
 
 
-@click.group(name="systemd-unit-status")
+@click.group(
+    name="systemd-unit-status",
+    epilog="",
+    help="Get the status of a systemd unit. " + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="",
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
 @click.option("-n", "--name", "name", required=True, type=str)
 @click.pass_context
 def systemd_unit_status(ctx: Context, name: str):
@@ -16,7 +23,14 @@ def systemd_unit_status(ctx: Context, name: str):
     agent_io.check_collect_context(ctx)
 
 
-@click.group(name="systemd-unit-logs")
+@click.group(
+    name="systemd-unit-logs",
+    epilog="",
+    help="Get the logs for a systemd unit. " + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="",
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
 @click.option("-n", "--name", "name", required=True, type=str)
 @click.pass_context
 def systemd_unit_logs(ctx: Context, name: str):

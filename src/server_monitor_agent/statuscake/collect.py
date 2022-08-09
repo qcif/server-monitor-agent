@@ -1,14 +1,22 @@
 import click
 from click import Context
 
-from server_monitor_agent.agent import io as agent_io
+from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.alert_manager import send as alert_send
 from server_monitor_agent.disk import send as disk_send
 from server_monitor_agent.server import send as server_send
 from server_monitor_agent.statuscake import model as sc_model, send as sc_send
 
 
-@click.group(name="statuscake")
+@click.group(
+    name="statuscake",
+    epilog="",
+    help="Collect information required for the statuscake agent. "
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="",
+    no_args_is_help=False,
+    invoke_without_command=True,
+)
 @click.option(
     "-i",
     "--interval",

@@ -11,6 +11,7 @@ from server_monitor_agent.disk import model as disk_model
 
 @click.command(
     name="file-output",
+    epilog="",
     help="Write the output to a file in the given format.",
     short_help="Write to a file.",
 )

@@ -2,7 +2,7 @@
 
 import click
 
-from server_monitor_agent.agent import io as agent_io
+from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.alert_manager import send as alert_manager_send
 from server_monitor_agent.disk import send as disk_send
 from server_monitor_agent.docker import model as docker_model
@@ -12,8 +12,11 @@ from server_monitor_agent.server import send as server_send
 @click.group(
     name="docker-container",
     epilog="",
-    help="Get the status for a docker container.",
+    help="Get the status for a docker container."
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
     short_help="Get docker container status.",
+    no_args_is_help=False,
+    invoke_without_command=True,
 )
 @click.option("-n", "--name", "name", required=True, type=str)
 @click.option(

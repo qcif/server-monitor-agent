@@ -15,7 +15,7 @@ from server_monitor_agent.server import send as server_send
 @click.group(
     name="disk",
     epilog="",
-    help="Get information about disk usage.",
+    help="Get information about disk usage." + agent_model.TEXT_CHOOSE_NOTIFICATION,
     short_help="Get disk usage.",
     no_args_is_help=False,
     invoke_without_command=True,
@@ -52,8 +52,8 @@ def disk(
 @click.group(
     name="file-status",
     epilog="",
-    help="Get information about disk usage.",
-    short_help="Get disk usage.",
+    help="Get information about a file." + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="Get information about a file.",
     no_args_is_help=False,
     invoke_without_command=True,
 )
@@ -62,8 +62,8 @@ def disk(
     "--path",
     "path",
     required=True,
-    type=click.Path(),
-    help="Path to the file to check.",
+    type=click.Path(file_okay=True, dir_okay=True, path_type=pathlib.Path),
+    help="Path to the file or folder to check.",
 )
 @click.option(
     "-s",
@@ -92,8 +92,9 @@ def file_status(
 @click.group(
     name="file-input",
     epilog="",
-    help="Get information about disk usage.",
-    short_help="Get disk usage.",
+    help="Load previously collected information from a file."
+    + agent_model.TEXT_CHOOSE_NOTIFICATION,
+    short_help="Load information from a file.",
     no_args_is_help=False,
     invoke_without_command=True,
 )
