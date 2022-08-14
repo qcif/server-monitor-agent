@@ -14,25 +14,34 @@ Create a Python 3 venv in a directory named `venv` in the same level as the clon
 
 Use pip to install and update the dependencies:
 
-    $ python -m venv ../venv
-    $ ../venv/bin/activate
-    $ python -m pip install -U pip setuptools wheel
-    $ pip list --outdated
-    $ pip install -U -r requirements.txt
-    $ pip install -U -r requirements-dev.txt
+```bash
+python -m venv ../venv
 
-To run tests and linters (run these before committing):
+# For Windows Git Bash
+source ../.venv/Scripts/activate
+# others
+source ../.venv/bin/activate
 
-    $ python -X dev -m pytest --tb=line
-    $ python -X dev -m coverage run -m pytest --tb=line
-    $ python -X dev -m coverage report
-    $ python -X dev -m coverage html
-    $ python -X dev -m flake8 src --count --show-source --statistics
-    $ python -X dev -m black --check .
-    $ python -X dev -m mypy src
-    $ python -X dev -m pylint src
-    $ python -X dev -m pydocstyle src
-    $ python -X dev -m pyright src
+python -m pip install -U pip setuptools wheel
+pip install -U -r requirements.txt -r requirements-dev.txt
+pip list --outdated
+```
+
+
+To run tests and linters (run these before committing), see the github 
+
+```bash
+python -X dev -m pytest --tb=line
+python -X dev -m coverage run -m pytest --tb=line
+python -X dev -m coverage report
+python -X dev -m coverage html
+python -X dev -m flake8 src --count --show-source --statistics
+python -X dev -m black --check .
+python -X dev -m mypy src
+python -X dev -m pylint src
+python -X dev -m pydocstyle src
+python -X dev -m pyright src
+```
 
 ## Build and publish a new release
 
@@ -49,13 +58,20 @@ TODO:
 - Convert to OpenAPI 3: https://mermade.org.uk/openapi-converter
 - Save to: api/prometheus-alertmanager-openapi-3.yml
 
+
 ```bash
+
 cd server-monitor-agent/api
+
+# For Windows Git Bash
 source ../.venv/Scripts/activate
-../.venv/Scripts/openapi-python-client.exe generate \
+# others
+source ../.venv/bin/activate
+
+openapi-python-client.exe generate \
   --path prometheus-alertmanager-openapi-3.yml \
   --meta poetry
-../.venv/Scripts/openapi-python-client.exe update \
+openapi-python-client.exe update \
   --path prometheus-alertmanager-openapi-3.yml \
   --meta poetry
 ```

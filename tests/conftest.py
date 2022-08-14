@@ -1,5 +1,5 @@
 import subprocess
-import typing
+from beartype import typing
 
 import pytest
 

@@ -3,7 +3,7 @@ import pathlib
 import pytest
 from click.testing import CliRunner
 
-from server_monitor_agent.cli.command import cli
+from server_monitor_agent.agent.command import cli
 
 
 @pytest.mark.parametrize("collect_arg", ["disk", "file-status", "file-input"])
@@ -45,11 +45,8 @@ def test_disk_module(
         }
         send_args = [send_arg, *send_available[send_arg]]
 
-        with pytest.raises(NotImplementedError):
-            result = runner.invoke(
-                cli, [*collect_args, *send_args], catch_exceptions=False
-            )
+        result = runner.invoke(cli, [*collect_args, *send_args], catch_exceptions=False)
 
-    # assert result.stdout == ""
-    # assert result.stderr == ""
-    # assert result.exit_code == 0
+    assert result.stdout == ""
+    assert result.stderr == ""
+    assert result.exit_code == 0
