@@ -110,32 +110,11 @@ class CliArgs:
 class CollectArgs(abc.ABC):
     """Arguments for collecting information."""
 
-    @property
-    @abc.abstractmethod
-    @beartype.beartype
-    def io_module(self) -> str:
-        """The name of the io module."""
-        raise NotImplementedError("Must implement io_module for CollectArgs.")
-
-    @property
-    @abc.abstractmethod
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        """The prefix of the io function."""
-        raise NotImplementedError("Must implement io_func_prefix for CollectArgs.")
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class SendArgs(abc.ABC):
     """Arguments for sending information."""
-
-    @property
-    @abc.abstractmethod
-    @beartype.beartype
-    def io_func_suffix(self) -> str:
-        """The suffix of the io function."""
-        raise NotImplementedError("Must implement io_func_suffix for SendArgs.")
 
 
 @beartype.beartype
@@ -185,7 +164,7 @@ class AgentItem(ExternalItem):
     service_name: str
     """The name of the service that was checked."""
 
-    tags: typing.Dict[str, str] = dataclasses.field(default_factory=dict)
+    tags: typing.Dict[str, typing.Any] = dataclasses.field(default_factory=dict)
     """Optional key=value entries for arbitrary information.
     This may not be displayed."""
 
@@ -232,7 +211,7 @@ class TextCompareEntry:
 
 @beartype.beartype
 @dataclasses.dataclass
-class RegisterCmd:
+class RegisterCmd(abc.ABC):
     """Register a command."""
 
 
@@ -250,6 +229,40 @@ class RegisterSendCmd(RegisterCmd):
     """Register a send command."""
 
     command: click.Command
+    collect_only: typing.Optional[typing.Iterable[str]] = None
+
+
+@beartype.beartype
+@dataclasses.dataclass
+class RegisterIO(abc.ABC):
+    """Register an input or output."""
+
+
+TypeCollectArgs = typing.TypeVar("T", bound=CollectArgs, covariant=True)
+
+
+@beartype.beartype
+@dataclasses.dataclass
+class RegisterCollectInput(RegisterIO):
+    """Register a source input."""
+
+    # Expected type '(CollectArgs) -> AgentItem',
+    # got 'Union[
+    # (args: HealthCheckCollectArgs) -> AgentItem,
+    # ((args: HealthCheckCollectArgs) -> AgentItem) -> (args: HealthCheckCollectArgs) -> AgentItem
+    # ]' instead
+    func: typing.Callable[[TypeCollectArgs], AgentItem]
+
+
+TypeSendArgs = typing.TypeVar("T", bound=SendArgs, covariant=True)
+
+
+@beartype.beartype
+@dataclasses.dataclass
+class RegisterSendOutput(RegisterCmd):
+    """Register a target output."""
+
+    func: typing.Callable[[TypeSendArgs, AgentItem], None]
     collect_only: typing.Optional[typing.Iterable[str]] = None
 
 

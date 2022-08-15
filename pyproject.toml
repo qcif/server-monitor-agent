@@ -36,6 +36,9 @@ dynamic = [
 [project.scripts]
 server-monitor-agent = 'server_monitor_agent.entry:main'
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools.dynamic]
 version = { file = ["VERSION"] }
 dependencies = { file = ["requirements.txt"] }

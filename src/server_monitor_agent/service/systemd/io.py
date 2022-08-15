@@ -1,103 +1,101 @@
+import dataclasses
+
 import beartype
 
-from server_monitor_agent.service.alert_manager import (
-    model as alert_model,
-    operation as alert_op,
-)
-from server_monitor_agent.service.disk import model as disk_model, operation as disk_op
-from server_monitor_agent.service.server import (
-    model as server_model,
-    operation as server_op,
-)
+from server_monitor_agent.agent import model as agent_model
+from server_monitor_agent.service.server import operation as server_op
 from server_monitor_agent.service.systemd import (
-    build as systemd_build,
     model as systemd_model,
+    operation as systemd_op,
 )
 
 
 @beartype.beartype
-def collect_unit_status_send_alert_manager(
-    collect_args: systemd_model.SystemdUnitStatusCollectArgs,
-    send_args: alert_model.AlertManagerSendArgs,
-):
-    data = systemd_build.unit_status(collect_args)
-    item = to_alert_manager(data)
-    alert_op.submit_alerts(item)
-    return data
+def unit_status_input(
+    args: systemd_model.SystemdUnitStatusCollectArgs,
+) -> agent_model.AgentItem:
+
+    show = systemd_op.systemctl_show(args.name)
+    if show is None:
+        raise ValueError()
+    logs = systemd_op.journalctl(args.name)
+
+    hostname = server_op.hostname()
+
+    status_code = str(show.exit_code) if show.exit_code else None
+    if status_code is None:
+        status_code = (
+            agent_model.REPORT_CODE_PASS
+            if show.result == "success"
+            else agent_model.REPORT_LEVEL_WARN
+        )
+
+    # determine status
+    if level:
+        status = level
+    elif status_code == agent_model.REPORT_CODE_PASS:
+        status = agent_model.REPORT_LEVEL_PASS
+    elif status_code == agent_model.REPORT_CODE_WARN:
+        status = agent_model.REPORT_LEVEL_WARN
+    else:
+        status = agent_model.REPORT_LEVEL_CRIT
+
+    date = args.date_parse(
+        show.state_change_time_stamp
+        or show.exec_main_exit_timestamp
+        or show.exec_main_start_timestamp
+        or show.active_exit_timestamp
+        or show.active_enter_timestamp
+        or show.inactive_exit_timestamp
+        or show.inactive_enter_timestamp
+    )
+
+    title = ""
+    descr = ""
+
+    tags = {
+        k: v for k, v in dataclasses.asdict(show).items() if v is not None and v != ""
+    }
+
+    log_subset = [i.message for i in sorted(logs, key=lambda x: x.timestamp)][:6]
+    for index, log in enumerate(log_subset):
+        tags[f"log{index + 1}"] = log
+
+    return agent_model.AgentItem(
+        service_name=f"systemd unit {args.name}",
+        host_name=hostname,
+        source_name="systemd",
+        status_code=status_code,
+        status_name=status,
+        title=title,
+        description=descr.strip(),
+        check_type=cmd_name,
+        date=date,
+        tags=tags,
+    )
 
 
 @beartype.beartype
-def collect_unit_status_send_file_output(
-    collect_args: systemd_model.SystemdUnitStatusCollectArgs,
-    send_args: disk_model.FileOutputSendArgs,
-):
-    data = systemd_build.unit_status(collect_args)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args, item)
-    return data
+def unit_logs_input(
+    args: systemd_model.SystemdUnitLogsCollectArgs,
+) -> agent_model.AgentItem:
+
+    # return agent_model.AgentItem(
+    #     service_name=f"journald logs {args.name}",
+    #     host_name=hostname,
+    #     source_name="systemd",
+    #     status_code=status_code,
+    #     status_name=status,
+    #     title=title,
+    #     description=descr.strip(),
+    #     check_type=cmd_name,
+    #     date=date,
+    #     tags=tags,
+    # )
+    return agent_model.AgentItem()
 
 
-@beartype.beartype
-def collect_unit_status_send_logged_in_users(
-    collect_args: systemd_model.SystemdUnitStatusCollectArgs,
-    send_args: server_model.LoggedInUsersSendArgs,
-):
-    data = systemd_build.unit_status(collect_args)
-    item = to_user_message(data)
-    server_op.user_message(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_unit_status_send_stream_output(
-    collect_args: systemd_model.SystemdUnitStatusCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = systemd_build.unit_status(collect_args)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_unit_logs_send_alert_manager(
-    collect_args: systemd_model.SystemdUnitLogsCollectArgs,
-    send_args: alert_model.AlertManagerSendArgs,
-):
-    data = systemd_build.unit_logs(collect_args)
-    item = to_alert_manager(data)
-    alert_op.submit_alerts(item)
-    return data
-
-
-@beartype.beartype
-def collect_unit_logs_send_file_output(
-    collect_args: systemd_model.SystemdUnitLogsCollectArgs,
-    send_args: disk_model.FileOutputSendArgs,
-):
-    data = systemd_build.unit_logs(collect_args)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_unit_logs_send_logged_in_users(
-    collect_args: systemd_model.SystemdUnitLogsCollectArgs,
-    send_args: server_model.LoggedInUsersSendArgs,
-):
-    data = systemd_build.unit_logs(collect_args)
-    item = to_user_message(data)
-    server_op.user_message(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_unit_logs_send_stream_output(
-    collect_args: systemd_model.SystemdUnitLogsCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = systemd_build.unit_logs(collect_args)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
+register_io = [
+    agent_model.RegisterCollectInput(unit_status_input),
+    agent_model.RegisterCollectInput(unit_logs_input),
+]

@@ -18,16 +18,6 @@ class DiskCollectArgs(agent_model.CollectArgs):
     disk_uuid: typing.Optional[uuid.UUID] = None
     label: typing.Optional[str] = None
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "disk"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "disk_status"
-
     @beartype.beartype
     def validate(self):
         items = [self.path, self.device, self.disk_uuid, self.label]
@@ -44,16 +34,6 @@ class FileStatusCollectArgs(agent_model.CollectArgs):
     state: str
     content: typing.List[agent_model.TextCompareEntry]
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "disk"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "file_status"
-
 
 @beartype.beartype
 @dataclasses.dataclass
@@ -61,27 +41,12 @@ class FileInputCollectArgs(agent_model.CollectArgs):
     path: pathlib.Path
     format: str
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "disk"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "file_input"
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class FileOutputSendArgs(agent_model.SendArgs):
     path: pathlib.Path
     format: str
-
-    @property
-    @beartype.beartype
-    def io_func_suffix(self) -> str:
-        return "file_output"
 
 
 @beartype.beartype

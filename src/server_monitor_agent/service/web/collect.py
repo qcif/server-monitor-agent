@@ -26,6 +26,7 @@ from server_monitor_agent.service.web import model as web_model
     "--method",
     "method",
     type=str,
+    default="GET",
     help="The url request method.",
 )
 @click.option(
@@ -95,7 +96,7 @@ def web_app_status(
         status_code=status_code, headers=resp_headers, content=resp_content
     )
 
-    ctx.obj = web_model.WebAppStatusCollectArgs(request=request, response=response)
+    ctx.obj = web_model.RequestUrlCollectArgs(request=request, response=response)
     agent_io.check_collect_context(ctx)
 
 

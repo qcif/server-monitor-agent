@@ -4,7 +4,6 @@ import logging
 import sys
 
 from server_monitor_agent.agent import command
-from server_monitor_agent.agent.register import Registry
 
 
 def main() -> None:
@@ -17,9 +16,6 @@ def main() -> None:
     )
     if "--debug" in sys.argv:
         logging.getLogger().setLevel(logging.DEBUG)
-
-    reg = Registry()
-    reg.gather_services()
 
     command.cli()
 

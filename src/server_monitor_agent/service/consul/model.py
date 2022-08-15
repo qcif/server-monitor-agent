@@ -97,7 +97,7 @@ class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
 
 @beartype.beartype
 @dataclasses.dataclass
-class HealthCheckCollectArg(agent_model.CollectArgs):
+class HealthCheckCollectArgs(agent_model.CollectArgs):
     http_addr: typing.Optional[str] = None
     http_ssl_enabled: typing.Optional[bool] = None
     http_ssl_verify: typing.Optional[bool] = None
@@ -105,16 +105,6 @@ class HealthCheckCollectArg(agent_model.CollectArgs):
     ca_cert_dir: typing.Optional[pathlib.Path] = None
     client_cert: typing.Optional[pathlib.Path] = None
     client_key: typing.Optional[pathlib.Path] = None
-
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "consul"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "health_checks"
 
     @functools.cached_property
     @beartype.beartype

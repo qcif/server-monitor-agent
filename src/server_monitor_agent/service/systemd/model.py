@@ -12,31 +12,11 @@ from server_monitor_agent.agent import model as agent_model
 class SystemdUnitStatusCollectArgs(agent_model.CollectArgs):
     name: str
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "systemd"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "unit_status"
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class SystemdUnitLogsCollectArgs(agent_model.CollectArgs):
     name: str
-
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "systemd"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "unit_logs"
 
 
 @beartype.beartype

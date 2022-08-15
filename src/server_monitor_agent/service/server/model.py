@@ -19,42 +19,17 @@ class CpuCollectArgs(agent_model.CollectArgs):
     threshold: int = 80
     interval: float = 2.0
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "server"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "cpu_status"
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class MemoryCollectArgs(agent_model.CollectArgs):
     threshold: int = 80
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "server"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "memory_status"
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class LoggedInUsersSendArgs(agent_model.SendArgs):
     user_group: str
-
-    @property
-    @beartype.beartype
-    def io_func_suffix(self) -> str:
-        return "logged_in_users"
 
 
 @beartype.beartype
@@ -63,27 +38,12 @@ class StreamInputCollectArgs(agent_model.CollectArgs):
     source: str
     format: str
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "server"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "stream_input"
-
 
 @beartype.beartype
 @dataclasses.dataclass
 class StreamOutputSendArgs(agent_model.SendArgs):
     target: str
     format: str
-
-    @property
-    @beartype.beartype
-    def io_func_suffix(self) -> str:
-        return "stream_output"
 
 
 @beartype.beartype

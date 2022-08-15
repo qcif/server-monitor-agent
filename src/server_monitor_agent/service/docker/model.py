@@ -13,16 +13,6 @@ class ContainerStatusCollectArgs(agent_model.CollectArgs):
     state: str
     health: str
 
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "docker"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "container_status"
-
 
 @beartype.beartype
 @dataclasses.dataclass

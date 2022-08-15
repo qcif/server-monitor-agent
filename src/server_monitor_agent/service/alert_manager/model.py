@@ -10,10 +10,7 @@ from server_monitor_agent.agent import model as agent_model
 @beartype.beartype
 @dataclasses.dataclass
 class AlertManagerSendArgs(agent_model.SendArgs):
-    @property
-    @beartype.beartype
-    def io_func_suffix(self) -> str:
-        return "alert_manager"
+    """"""
 
 
 @beartype.beartype

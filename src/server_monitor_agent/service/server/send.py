@@ -23,7 +23,7 @@ from server_monitor_agent.service.server import model as server_model
     type=str,
 )
 @click.pass_context
-def logged_in_users(ctx: click.Context, user_group: str):
+def users_message_output(ctx: click.Context, user_group: str):
     """Send an alert to logged-in users."""
     ctx.obj = server_model.LoggedInUsersSendArgs(user_group=user_group)
     agent_io.check_send_context(ctx)
@@ -60,6 +60,6 @@ def stream_output(ctx: click.Context, target: str, out_format: str):
 
 
 register_commands = [
-    agent_model.RegisterSendCmd(logged_in_users),
+    agent_model.RegisterSendCmd(users_message_output),
     agent_model.RegisterSendCmd(stream_output),
 ]

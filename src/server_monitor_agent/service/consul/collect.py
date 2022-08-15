@@ -77,7 +77,7 @@ def consul_checks(
     client_cert: typing.Optional[pathlib.Path],
     client_key: typing.Optional[pathlib.Path],
 ):
-    ctx.obj = consul_model.HealthCheckCollectArg(
+    ctx.obj = consul_model.HealthCheckCollectArgs(
         http_addr=http_addr,
         http_ssl_enabled=http_ssl_enabled,
         http_ssl_verify=http_ssl_verify,

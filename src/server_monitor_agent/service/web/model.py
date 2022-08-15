@@ -33,19 +33,9 @@ class UrlResponseEntry:
 
 @beartype.beartype
 @dataclasses.dataclass
-class WebAppStatusCollectArgs(agent_model.CollectArgs):
+class RequestUrlCollectArgs(agent_model.CollectArgs):
     request: UrlRequestEntry
     response: UrlResponseEntry
-
-    @property
-    @beartype.beartype
-    def io_module(self) -> str:
-        return "web"
-
-    @property
-    @beartype.beartype
-    def io_func_prefix(self) -> str:
-        return "request_url"
 
 
 @beartype.beartype
@@ -63,12 +53,11 @@ class EmailMessageSendArgs(agent_model.SendArgs):
     port: int
     username: str
     password: str
-    subject: str
     from_address: str
     to_addresses: typing.Sequence[str]
-    body_text: str
-    body_html: str
 
-    @property
-    def io_func_suffix(self) -> str:
-        return "email_message"
+
+@beartype.beartype
+@dataclasses.dataclass
+class SlackMessageSendArgs(agent_model.SendArgs):
+    webhook: str

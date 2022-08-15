@@ -1,54 +1,81 @@
 import beartype
+import requests
 
-from server_monitor_agent.service.alert_manager import operation as alert_op
-from server_monitor_agent.service.disk import operation as disk_op
-from server_monitor_agent.service.server import (
-    model as server_model,
-    operation as server_op,
-)
-from server_monitor_agent.service.web import model as web_model
-from server_monitor_agent.service.web import build as web_build
+from server_monitor_agent.agent import model as agent_model
+from server_monitor_agent.service.web import model as web_model, operation as web_op
 
 
 @beartype.beartype
-def collect_request_url_send_alert_manager(
-    collect_args: web_model.WebAppStatusCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = web_build.request_url(collect_args)
-    item = to_alert_manager(data)
-    alert_op.submit_alerts(item)
-    return data
+def email_message_output(
+    args: web_model.EmailMessageSendArgs, item: agent_model.AgentItem
+) -> None:
+    subject = item.summary
+    body_text = item.description
+    body_html = item.description
+    web_op.submit_email(
+        host=args.host,
+        port=args.port,
+        username=args.username,
+        password=args.password,
+        subject=subject,
+        from_address=args.from_address,
+        to_addresses=args.to_addresses,
+        body_text=body_text,
+        body_html=body_html,
+    )
 
 
 @beartype.beartype
-def collect_request_url_send_file_output(
-    collect_args: web_model.WebAppStatusCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = web_build.request_url(collect_args)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args, item)
-    return data
+def slack_message_output(
+    args: web_model.SlackMessageSendArgs, item: agent_model.AgentItem
+) -> None:
+    web_op.submit_slack_message(args.webhook, item)
 
 
 @beartype.beartype
-def collect_request_url_send_logged_in_users(
-    collect_args: web_model.WebAppStatusCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = web_build.request_url(collect_args)
-    item = to_user_message(data)
-    server_op.user_message(send_args, item)
-    return data
+def request_url_input(args: web_model.RequestUrlCollectArgs) -> agent_model.AgentItem:
+    """Request a url."""
+
+    req = requests.request(
+        method=args.request.method, url=args.request.url, headers=args.reqeust.headers
+    )
+    headers = req.headers
+    match_status = req.status_code == args.response.status_code
+    response_content = req.text
+
+    match_content = []
+    for expected_item in args.response.content:
+        match_content.append(
+            {
+                "value": expected_item.value,
+                "comparison": expected_item.comparison,
+                "outcome": expected_item.compare(response_content),
+            }
+        )
+
+    match_headers = []
+    for expected_header in args.response.expected_headers:
+        for expected_item in expected_header.comparisons:
+            value = headers.get(expected_header.name)
+            match_headers.append(
+                {
+                    "header": expected_header.name,
+                    "value": expected_item.value,
+                    "comparison": expected_item.comparison,
+                    "outcome": expected_item.compare(value),
+                }
+            )
+
+    return web_model.UrlResponseResult(
+        exit_code=req.status_code,
+        match_status=match_status,
+        match_content=match_content,
+        match_headers=match_headers,
+    )
 
 
-@beartype.beartype
-def collect_request_url_send_stream_output(
-    collect_args: web_model.WebAppStatusCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = web_build.request_url(collect_args)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
+register_io = [
+    agent_model.RegisterCollectInput(request_url_input),
+    agent_model.RegisterSendOutput(email_message_output),
+    agent_model.RegisterSendOutput(slack_message_output),
+]

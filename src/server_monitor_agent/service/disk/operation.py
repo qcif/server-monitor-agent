@@ -219,9 +219,7 @@ def df() -> typing.List[disk_model.DfResult]:
 
 
 @beartype.beartype
-def write_file(
-    out_format: str, out_target: pathlib.Path, item: agent_model.ExternalItem
-) -> None:
+def write_file(out_target: pathlib.Path, item: agent_model.ExternalItem) -> None:
     # get content
     if out_format == agent_model.FORMAT_AGENT:
         content = item.to_json()

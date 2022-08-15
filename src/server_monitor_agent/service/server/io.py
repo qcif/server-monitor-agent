@@ -1,4 +1,5 @@
 """Input (parsing) and output (formatting) functions for a server instance."""
+import math
 
 import beartype
 
@@ -7,165 +8,122 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-from server_monitor_agent.agent import (
-    model as agent_model,
-)
-from server_monitor_agent.service.alert_manager import (
-    model as alert_model,
-    operation as alert_op,
-)
-from server_monitor_agent.service.disk import model as disk_model, operation as disk_op
+from server_monitor_agent.agent import model as agent_model, operation as agent_op
 from server_monitor_agent.service.server import (
-    build as server_build,
     model as server_model,
     operation as server_op,
 )
 
 
 @beartype.beartype
-def collect_cpu_status_send_alert_manager(
-    collect_args: server_model.CpuCollectArgs,
-    send_args: alert_model.AlertManagerSendArgs,
-):
-    item = server_build.cpu_status(collect_args)
-    alert_op.submit_alerts(item)
-    return item
+def stream_input(args: server_model.StreamInputCollectArgs) -> agent_model.AgentItem:
+    return server_op.read_stream(args.source, args.format).to_agent_item()
 
 
 @beartype.beartype
-def collect_cpu_status_send_file_output(
-    collect_args: server_model.CpuCollectArgs, send_args: disk_model.FileOutputSendArgs
-):
-    data = server_build.cpu_status(collect_args)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args, item)
-    return data
+def stream_output(
+    args: server_model.StreamOutputSendArgs, item: agent_model.AgentItem
+) -> None:
+    server_op.write_stream(args.format, args.target, item)
 
 
 @beartype.beartype
-def collect_cpu_status_send_stream_output(
-    collect_args: server_model.CpuCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = server_build.cpu_status(collect_args)
-    item = to_user_message(data)
-    server_op.write_stream(send_args.format, send_args.target, item)
-    return data
+def users_message_output(
+    args: server_model.LoggedInUsersSendArgs, item: agent_model.AgentItem
+) -> None:
+    server_op.user_message(item, args.user_group)
 
 
 @beartype.beartype
-def collect_cpu_status_send_logged_in_users(
-    collect_args: server_model.CpuCollectArgs,
-    send_args: server_model.LoggedInUsersSendArgs,
-):
-    data = server_build.cpu_status(collect_args)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
+def cpu_status_input(args: server_model.CpuCollectArgs) -> agent_model.AgentItem:
+    """Build the agent item for the device cpu usage."""
+
+    hostname_result = server_op.hostname()
+    date = server_op.timezone().now
+
+    usage = server_op.cpu_usage(interval=args.interval)
+    threshold = float(args.threshold) / 100.0
+
+    status, status_code = agent_op.report_evaluate(usage, threshold)
+
+    if status == agent_model.REPORT_LEVEL_PASS:
+        title = "Typical CPU use"
+        descr = f"Typical CPU use of {usage:.1%} " f"(threshold {threshold:.1%})."
+    else:
+        title = "High CPU use"
+        descr = (
+            f"High CPU use of {usage:.1%} "
+            f"(threshold {threshold:.1%}). "
+            f"Check instance for unexpected or faulty processes."
+        )
+
+    return agent_model.AgentItem(
+        summary=title,
+        description=descr.strip(),
+        host_name=hostname_result,
+        source_name="server",
+        check_name="cpu",
+        date=date,
+        status_name=status,
+        service_name="cpu",
+        tags={"threshold": args.threshold, "usage": usage},
+    )
 
 
 @beartype.beartype
-def collect_memory_status_send_alert_manager(
-    collect_args: server_model.MemoryCollectArgs,
-    send_args: alert_model.AlertManagerSendArgs,
-):
-    data = server_build.device_memory(collect_args)
-    item = to_alert_manager(data)
-    alert_op.submit_alerts(item)
-    return data
-
-
-@beartype.beartype
-def collect_memory_status_send_file_output(
-    collect_args: server_model.MemoryCollectArgs,
-    send_args: disk_model.FileOutputSendArgs,
-):
-    data = server_build.device_memory(collect_args)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_memory_status_send_logged_in_users(
-    collect_args: server_model.MemoryCollectArgs,
-    send_args: server_model.LoggedInUsersSendArgs,
-):
-    data = server_build.device_memory(collect_args)
-    item = to_user_message(data)
-    server_op.user_message(send_args.user_group, item)
-    return data
-
-
-@beartype.beartype
-def collect_memory_status_send_stream_output(
-    collect_args: server_model.MemoryCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = server_build.device_memory(collect_args)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
-
-
-@beartype.beartype
-def collect_stream_input_send_alert_manager(
-    collect_args: server_model.StreamInputCollectArgs,
-    send_args: alert_model.AlertManagerSendArgs,
-):
-    data = server_op.read_stream(collect_args.source, collect_args.format)
-    item = to_alert_manager(data)
-    alert_op.submit_alerts(item)
-    return data
-
-
-@beartype.beartype
-def collect_stream_input_send_file_output(
-    collect_args: server_model.StreamInputCollectArgs,
-    send_args: disk_model.FileOutputSendArgs,
-):
-    data = server_op.read_stream(collect_args.source, collect_args.format)
-    item = to_format(send_args.format, data)
-    disk_op.write_file(send_args.format, send_args.path, item)
-    return data
-
-
-@beartype.beartype
-def collect_stream_input_send_logged_in_users(
-    collect_args: server_model.StreamInputCollectArgs,
-    send_args: server_model.LoggedInUsersSendArgs,
-):
-    data = server_op.read_stream(collect_args.source, collect_args.format)
-    item = to_user_message(data)
-    server_op.user_message(send_args.user_group, item)
-    return data
-
-
-@beartype.beartype
-def collect_stream_input_send_stream_output(
-    collect_args: server_model.StreamInputCollectArgs,
-    send_args: server_model.StreamOutputSendArgs,
-):
-    data = server_op.read_stream(collect_args.source, collect_args.format)
-    item = to_format(send_args.format, data)
-    server_op.write_stream(send_args, item)
-    return data
-
-
-@beartype.beartype
-def to_alert_manager(
-    data: agent_model.AgentItem,
+def memory_status_input(
+    args: server_model.MemoryCollectArgs,
 ) -> agent_model.AgentItem:
-    return None
+    """Build the agent item for the device memory usage."""
+
+    hostname = server_op.hostname()
+    date = server_op.timezone().now
+
+    usage = server_op.memory()
+    percent = float(usage.percent) / 100.0
+    amount_gib = round(usage.available / (math.pow(1024, 3)), 2)
+    threshold = float(args.threshold) / 100.0
+
+    status, status_code = agent_op.report_evaluate(percent, threshold)
+
+    if status == agent_model.REPORT_LEVEL_PASS:
+        title = "Typical memory use"
+        descr = (
+            f"Typical memory use of {percent:.1%} "
+            f"({amount_gib}GiB, threshold {threshold:.1%})."
+        )
+    else:
+        title = "High memory use"
+        descr = (
+            f"High memory use of {percent:.1%} "
+            f"({amount_gib}GiB, threshold {threshold:.1%}). "
+            f"Check instance for excessive or changed memory use."
+        )
+
+    return agent_model.AgentItem(
+        service_name="memory",
+        host_name=hostname,
+        source_name="instance",
+        status_code=status_code,
+        status_name=status,
+        title=title,
+        description=descr.strip(),
+        check_type=cmd_name,
+        date=date,
+        tags={
+            "total": str(usage.total),
+            "available": str(usage.available),
+            "percent": str(usage.percent),
+            "used": str(usage.used),
+            "free": str(usage.free),
+        },
+    )
 
 
-@beartype.beartype
-def to_format(send_format: str, data: agent_model.AgentItem) -> agent_model.AgentItem:
-    return None
-
-
-@beartype.beartype
-def to_user_message(
-    data: agent_model.AgentItem,
-) -> agent_model.AgentItem:
-    return None
+register_io = [
+    agent_model.RegisterCollectInput(cpu_status_input),
+    agent_model.RegisterCollectInput(memory_status_input),
+    agent_model.RegisterCollectInput(stream_input),
+    agent_model.RegisterSendOutput(stream_output),
+    agent_model.RegisterSendOutput(users_message_output),
+]

@@ -17,7 +17,7 @@ def test_web_module(tmp_path, collect_arg, send_arg):
     with runner.isolated_filesystem(temp_dir=tmp_path) as d:
         temp_dir = pathlib.Path(d)
         collect_available = {
-            "web-app": [],
+            "web-app": ["-u", "http://localhost:8080"],
         }
         collect_args = [collect_arg, *collect_available[collect_arg]]
 

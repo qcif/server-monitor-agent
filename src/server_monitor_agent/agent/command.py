@@ -9,6 +9,7 @@ from server_monitor_agent.agent import (
     io as agent_io,
     model as agent_model,
     operation as agent_op,
+    registry as agent_registry,
 )
 
 logger = logging.getLogger(agent_model.APP_NAME_UNDER)
@@ -59,3 +60,9 @@ def cli(
     if ctx.obj.config_file:
         config = agent_op.read_config(ctx.obj.config_file)
         ctx.default_map = {**ctx.default_map, **config}
+
+
+# gather and register cli commands
+cmd_reg = agent_registry.CommandRegistry()
+cmd_reg.gather()
+cmd_reg.run(cli)

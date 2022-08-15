@@ -201,9 +201,10 @@ def processes() -> typing.List[server_model.ProcessResult]:
 
 
 @beartype.beartype
-def user_message(item: agent_model.AgentItem) -> None:
+def user_message(
+    item: agent_model.AgentItem, user_group: typing.Optional[str] = None
+) -> None:
     """Submit a message to display to all users logged in to the local machine."""
-    user_group = item.user_group
     users = f"users in group {user_group}" if user_group else "all users"
 
     check_type = item.check_type
