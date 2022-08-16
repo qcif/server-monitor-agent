@@ -19,8 +19,8 @@ def disk_status_input(args: disk_model.DiskCollectArgs) -> agent_model.AgentItem
     hostname = server_op.hostname()
     date = server_op.timezone().now
 
-    mnt = disk_op.disk_mounts(args)
-    partition = disk_op.disk_partitions(args, mnt)
+    mnt = disk_op.disk_mounts(args.path, args.device, args.disk_uuid, args.label)
+    partition = disk_op.disk_partitions(args.path, args.device, mnt.source, mnt.target)
 
     usage = partition.percent_usage
     test = float(args.threshold) / 100.0
@@ -45,23 +45,24 @@ def disk_status_input(args: disk_model.DiskCollectArgs) -> agent_model.AgentItem
         )
 
     return agent_model.AgentItem(
-        service_name=f"disk {path}",
-        host_name=hostname,
-        source_name="instance",
-        status_code=status_code,
-        status_name=status,
-        title=title,
+        summary=title,
         description=descr.strip(),
-        check_type=cmd_name,
+        host_name=hostname,
+        source_name="server",
+        check_name="disk",
         date=date,
+        status_name=status,
+        service_name=path or "(unknown)",
         tags={
-            "fstype": str(partition.fstype),
-            "device": str(partition.device),
-            "uuid": str(mnt.uuid),
-            "options": str(mnt.options),
-            "total": str(strutils.bytes2human(partition.total)),
-            "free": str(strutils.bytes2human(partition.free)),
-            "used": str(strutils.bytes2human(partition.used)),
+            "fstype": partition.fstype,
+            "device": partition.device,
+            "uuid": mnt.uuid,
+            "options": mnt.options,
+            "total": strutils.bytes2human(partition.total),
+            "free": strutils.bytes2human(partition.free),
+            "used": strutils.bytes2human(partition.used),
+            "usage": usage,
+            "threshold": args.threshold,
         },
     )
 
@@ -75,8 +76,7 @@ def file_input(args: disk_model.FileInputCollectArgs) -> agent_model.AgentItem:
 def file_output(
     args: disk_model.FileOutputSendArgs, item: agent_model.AgentItem
 ) -> None:
-    agent_op.convert_item(args.format, item)
-    disk_op.write_file(args.format, args.path, item)
+    disk_op.write_file(args.path, item.to_format(args.format))
 
 
 @beartype.beartype
@@ -100,10 +100,7 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
     states_available = [states_present, states_absent]
 
     if args.state not in states_available:
-        raise ValueError(
-            f"State must be one of '{', '.join(states_available)}' "
-            f"for check '{cmd_name}'."
-        )
+        raise ValueError(f"State must be one of '{', '.join(states_available)}'.")
 
     content_contains = "contains"
     content_not_contains = "not_contains"
@@ -124,27 +121,22 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
     date = server_op.timezone().now
 
     status = agent_model.REPORT_LEVEL_PASS
-    status_code = agent_model.REPORT_CODE_PASS
 
     descr_state = ""
     if args.state == states_present and exists:
         status = agent_model.REPORT_LEVEL_PASS
-        status_code = agent_model.REPORT_CODE_PASS
         descr_state = "File was found, as expected."
 
     if args.state == states_present and not exists:
         status = agent_model.REPORT_LEVEL_CRIT
-        status_code = agent_model.REPORT_CODE_CRIT
         descr_state = "Could not find file in expected path."
 
     if args.state == "absent" and not exists:
         status = agent_model.REPORT_LEVEL_PASS
-        status_code = agent_model.REPORT_CODE_PASS
         descr_state = "File was absent, as expected."
 
     if args.state == "absent" and exists:
         status = agent_model.REPORT_LEVEL_CRIT
-        status_code = agent_model.REPORT_CODE_CRIT
         descr_state = "Found file that was expected to not exist."
 
     if args.content:
@@ -160,7 +152,6 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
         has_content = i.value in file_content
         if i.comparison == content_contains and not has_content:
             status = agent_model.REPORT_LEVEL_CRIT
-            status_code = agent_model.REPORT_CODE_CRIT
             descr_content.append(f"File did not contain expected content '{i.value}'.")
 
         if i.comparison == content_contains and has_content:
@@ -168,7 +159,6 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
 
         if i.comparison == content_not_contains and has_content:
             status = agent_model.REPORT_LEVEL_CRIT
-            status_code = agent_model.REPORT_CODE_CRIT
             descr_content.append(f"File contains unexpected content '{i.value}'.")
 
         if i.comparison == content_not_contains and not has_content:
@@ -196,15 +186,18 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
         )
 
     return agent_model.AgentItem(
-        service_name=f"file {path}",
-        host_name=hostname,
-        source_name="instance",
-        status_code=status_code,
-        status_name=status,
-        title=title,
+        summary=title,
         description=descr.strip(),
-        check_type=cmd_name,
+        host_name=hostname,
+        source_name="server",
+        check_name="file",
         date=date,
+        status_name=status,
+        service_name=str(path),
+        tags={
+            "exists": exists,
+            "expected_state": args.state,
+        },
     )
 
 

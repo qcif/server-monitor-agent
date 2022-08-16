@@ -37,7 +37,7 @@ def request_url_input(args: web_model.RequestUrlCollectArgs) -> agent_model.Agen
     """Request a url."""
 
     req = requests.request(
-        method=args.request.method, url=args.request.url, headers=args.reqeust.headers
+        method=args.request.method, url=args.request.url, headers=args.request.headers
     )
     headers = req.headers
     match_status = req.status_code == args.response.status_code
@@ -45,26 +45,12 @@ def request_url_input(args: web_model.RequestUrlCollectArgs) -> agent_model.Agen
 
     match_content = []
     for expected_item in args.response.content:
-        match_content.append(
-            {
-                "value": expected_item.value,
-                "comparison": expected_item.comparison,
-                "outcome": expected_item.compare(response_content),
-            }
-        )
+        match_content.append(expected_item.compare(response_content))
 
     match_headers = []
-    for expected_header in args.response.expected_headers:
-        for expected_item in expected_header.comparisons:
-            value = headers.get(expected_header.name)
-            match_headers.append(
-                {
-                    "header": expected_header.name,
-                    "value": expected_item.value,
-                    "comparison": expected_item.comparison,
-                    "outcome": expected_item.compare(value),
-                }
-            )
+    for expected_header in args.response.headers:
+        value = headers.get(expected_header.name)
+        match_headers.extend(expected_header.compare(value))
 
     return web_model.UrlResponseResult(
         exit_code=req.status_code,

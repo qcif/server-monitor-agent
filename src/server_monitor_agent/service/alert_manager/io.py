@@ -8,7 +8,7 @@ from server_monitor_agent.service.alert_manager import (
 def alert_manager_output(
     args: alert_model.AlertManagerSendArgs, item: agent_model.AgentItem
 ) -> None:
-    alert_op.submit_alerts(item)
+    alert_op.submit_alerts(args.base_url, item)
 
 
 register_io = [

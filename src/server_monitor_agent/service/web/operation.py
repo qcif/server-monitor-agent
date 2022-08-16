@@ -1,13 +1,14 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from smtplib import SMTPException, SMTP_SSL
+from zoneinfo import ZoneInfo
 
 import beartype
 from beartype import typing
+from pytz.tzinfo import StaticTzInfo
 
 from server_monitor_agent.agent import model as agent_model
-from server_monitor_agent.service.web import model as web_model
-from server_monitor_agent.service.web import collect as web_collect
+from server_monitor_agent.service.web import collect as web_collect, model as web_model
 
 
 @beartype.beartype
@@ -81,15 +82,15 @@ def submit_email(
 
 @beartype.beartype
 def submit_slack_message(webhook: str, item: agent_model.AgentItem):
-    if item.status == self._pass:
+    if item.status_name == self._pass:
         emoji1 = ":white_check_mark:"
         emoji2 = ":large_green_circle:"
         prefix = "Passing"
-    elif item.status == self._warn:
+    elif item.status_name == self._warn:
         emoji1 = ":warning:"
         emoji2 = ":large_yellow_circle:"
         prefix = "Warning"
-    elif item.status == self._crit:
+    elif item.status_name == self._crit:
         emoji1 = ":fire:"
         emoji2 = ":red_circle:"
         prefix = "Critical"
@@ -99,9 +100,9 @@ def submit_slack_message(webhook: str, item: agent_model.AgentItem):
         prefix = "Unknown"
 
     extra = [
-        f"Server: {item.hostname}",
-        f"Source: {item.source}",
-        f"Status code: {item.status_code}",
+        f"Server: {item.host_name}",
+        f"Source: {item.source_name}",
+        f"Status: {item.status_name}",
         f"Enabled: {'yes' if item.is_enabled is True else '*no*'}",
         f"Active: {'yes' if item.is_active is True else '*no*'}",
     ]

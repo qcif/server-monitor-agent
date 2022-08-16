@@ -30,7 +30,6 @@ def check_collect_context(ctx: click.Context):
 def check_send_context(ctx: click.Context):
     agent_op.log_msg(logging.DEBUG, f"Running send {ctx.command.name}")
     agent_op.log_msg(logging.DEBUG, f"   Obj {ctx.obj}")
-    pass
 
 
 @beartype.beartype

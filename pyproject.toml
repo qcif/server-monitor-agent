@@ -38,6 +38,7 @@ server-monitor-agent = 'server_monitor_agent.entry:main'
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["server_monitor_agent*"]
 
 [tool.setuptools.dynamic]
 version = { file = ["VERSION"] }

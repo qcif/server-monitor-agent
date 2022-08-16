@@ -29,7 +29,7 @@ class MemoryCollectArgs(agent_model.CollectArgs):
 @beartype.beartype
 @dataclasses.dataclass
 class LoggedInUsersSendArgs(agent_model.SendArgs):
-    user_group: str
+    user_group: typing.Optional[str] = None
 
 
 @beartype.beartype

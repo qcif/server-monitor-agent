@@ -67,6 +67,7 @@ from server_monitor_agent.service.consul import model as consul_model
     type=click.Path(file_okay=True, dir_okay=False, path_type=pathlib.Path),
     help="Path the client key file.",
 )
+@click.pass_context
 def consul_checks(
     ctx: click.Context,
     http_addr: str,

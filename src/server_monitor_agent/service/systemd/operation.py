@@ -1,8 +1,8 @@
 import json
-from beartype import typing
 from datetime import datetime
-from beartype.typing import Optional
 
+from beartype import typing
+from beartype.typing import Optional
 from boltons.strutils import camel2under
 
 from server_monitor_agent.agent import operation as agent_op
@@ -53,11 +53,12 @@ def systemctl_show(name: str) -> Optional[model.SystemCtlShowResult]:
     props = result.stdout.splitlines()
     for prop in props:
         k, v = prop.split("=", 1)
-        key = camel2under(k)
         if k not in keys:
             continue
-        if k == "id":
-            k = "identifier"
+
+        key = camel2under(k)
+        if key == "id":
+            key = "identifier"
         if key in data:
             raise ValueError(f"Duplicate key '{k}' in systemctl output.")
         data[key] = v

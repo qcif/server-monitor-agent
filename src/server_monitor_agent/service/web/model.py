@@ -8,13 +8,6 @@ from server_monitor_agent.agent import model as agent_model
 
 @beartype.beartype
 @dataclasses.dataclass
-class UrlHeadersEntry:
-    name: str
-    comparisons: typing.List[agent_model.TextCompareEntry]
-
-
-@beartype.beartype
-@dataclasses.dataclass
 class UrlRequestEntry:
     url: str
     method: str = dataclasses.field(default="GET")
@@ -25,7 +18,9 @@ class UrlRequestEntry:
 @dataclasses.dataclass
 class UrlResponseEntry:
     status_code: int = dataclasses.field(default=200)
-    headers: typing.List[UrlHeadersEntry] = dataclasses.field(default_factory=list)
+    headers: typing.List[agent_model.NameValueComparisonsEntry] = dataclasses.field(
+        default_factory=list
+    )
     content: typing.List[agent_model.TextCompareEntry] = dataclasses.field(
         default_factory=list
     )

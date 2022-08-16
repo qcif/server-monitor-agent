@@ -73,24 +73,10 @@ def web_app_status(
 ):
     request = web_model.UrlRequestEntry(url=url, method=method, headers=dict(headers))
 
-    resp_headers_raw = {}
-    for header, comparison, value in response_headers:
-        if header not in resp_headers_raw:
-            resp_headers_raw[header] = []
-        resp_headers_raw[header].append((comparison, value))
-
-    resp_headers = []
-    for header, comparisons_raw in resp_headers_raw.items():
-        comparisons = [
-            agent_model.TextCompareEntry(comparison=c, value=v)
-            for c, v in comparisons_raw
-        ]
-        resp_header = web_model.UrlHeadersEntry(name=header, comparisons=comparisons)
-        resp_headers.append(resp_header)
-
-    resp_content = [
-        agent_model.TextCompareEntry(comparison=c, value=v) for c, v in response_content
-    ]
+    resp_headers = agent_model.NameValueComparisonsEntry.from_tuple_list(
+        response_headers
+    )
+    resp_content = agent_model.TextCompareEntry.from_tuple_list(response_content)
 
     response = web_model.UrlResponseEntry(
         status_code=status_code, headers=resp_headers, content=resp_content

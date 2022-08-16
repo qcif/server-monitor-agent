@@ -53,11 +53,12 @@ def email_message(
     help="Send a slack message.",
     short_help="Send a slack message.",
 )
+@click.option("-w", "--webhook", "webhook", required=True, help="The webhook url.")
 @click.pass_context
-def slack_message(
-    ctx: click.Context,
-):
-    pass
+def slack_message(ctx: click.Context, webhook: str):
+    ctx.obj = web_model.SlackMessageSendArgs(webhook=webhook)
+    agent_io.check_send_context(ctx)
+    agent_io.execute_context(ctx)
 
 
 register_commands = [

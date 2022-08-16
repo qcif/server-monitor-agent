@@ -11,6 +11,9 @@ from server_monitor_agent.agent import model as agent_model
 @dataclasses.dataclass
 class SystemdUnitStatusCollectArgs(agent_model.CollectArgs):
     name: str
+    attributes: typing.List[agent_model.NameValueComparisonsEntry] = dataclasses.field(
+        default_factory=list
+    )
 
 
 @beartype.beartype

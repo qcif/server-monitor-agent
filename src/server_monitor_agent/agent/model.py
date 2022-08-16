@@ -130,7 +130,23 @@ class OpResult(abc.ABC):
 class ExternalItem(abc.ABC):
     """A data item for external structured input and output."""
 
-    pass
+    @beartype.beartype
+    def to_json(self) -> str:
+        raise NotImplementedError()
+
+    @classmethod
+    @beartype.beartype
+    def from_json(cls, value: str) -> "ExternalItem":
+        raise NotImplementedError()
+
+    @beartype.beartype
+    def to_format(self, format_name: str) -> "ExternalItem":
+        raise NotImplementedError()
+
+    @classmethod
+    @beartype.beartype
+    def from_format(cls, item: "ExternalItem") -> "ExternalItem":
+        raise NotImplementedError()
 
 
 @beartype.beartype
@@ -159,7 +175,7 @@ class AgentItem(ExternalItem):
     """When the information in this item was generated or when the event occurred."""
 
     status_name: str
-    """Status of the check: one of 'passing', 'warning', 'critical'."""
+    """Status of the check - one of 'passing', 'warning', 'critical'."""
 
     service_name: str
     """The name of the service that was checked."""
@@ -196,17 +212,70 @@ class AgentItem(ExternalItem):
 
 @beartype.beartype
 @dataclasses.dataclass
+class TextCompare:
+    comparison: str
+    expected: str
+    actual: str
+    outcome: bool
+
+
+@beartype.beartype
+@dataclasses.dataclass
 class TextCompareEntry:
     comparison: str
     value: str
 
-    def compare(self, value: str):
+    def compare(self, value: str) -> TextCompare:
         if self.comparison == "contains":
-            return self.value is not None and self.value in value
+            return TextCompare(
+                comparison=self.comparison,
+                expected=self.value,
+                actual=value,
+                outcome=self.value is not None and self.value in value,
+            )
+
         elif self.comparison == "not_contains":
-            return self.value is not None and self.value not in value
+            return TextCompare(
+                comparison=self.comparison,
+                expected=self.value,
+                actual=value,
+                outcome=self.value is not None and self.value not in value,
+            )
+
         else:
             raise ValueError(f"Unknown comparison '{self.comparison}'.")
+
+    @classmethod
+    def from_tuple_list(cls, items: typing.List[typing.Tuple[str, str]]):
+        return [TextCompareEntry(comparison=c, value=v) for c, v in items]
+
+
+@beartype.beartype
+@dataclasses.dataclass
+class NameValueComparisonsEntry:
+    name: str
+    comparisons: typing.List[TextCompareEntry]
+
+    @classmethod
+    def from_tuple_list(cls, items: typing.List[typing.Tuple[str, str, str]]):
+        raw = {}
+        for name, comparison, value in items:
+            if name not in raw:
+                raw[name] = []
+            raw[name].append((comparison, value))
+
+        result = []
+        for name, comp in raw.items():
+            comparisons = TextCompareEntry.from_tuple_list(comp)
+            entry = NameValueComparisonsEntry(name=name, comparisons=comparisons)
+            result.append(entry)
+        return result
+
+    def compare(self, value: str) -> typing.Iterable[TextCompare]:
+        results = []
+        for comparison in self.comparisons:
+            results.append(comparison.compare(value))
+        return results
 
 
 @beartype.beartype

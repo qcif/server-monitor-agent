@@ -12,6 +12,8 @@ from server_monitor_agent.agent import model as agent_model
 class AlertManagerSendArgs(agent_model.SendArgs):
     """"""
 
+    base_url: str
+
 
 @beartype.beartype
 @dataclasses.dataclass

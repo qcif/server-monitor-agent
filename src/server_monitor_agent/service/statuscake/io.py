@@ -14,6 +14,10 @@ from server_monitor_agent.service.statuscake import (
 def statuscake_input(
     args: sc_model.StatusCakeCollectArgs,
 ) -> agent_model.AgentItem:
+
+    hostname = server_op.hostname()
+    date = server_op.timezone().now
+
     uptime = server_op.uptime()
 
     memory = server_op.memory()
@@ -22,28 +26,48 @@ def statuscake_input(
 
     hdd, thdd, drive_str = sc_op.disks()
 
-    first = server_op.network()
+    first = sc_op.network()
     cpu_use = server_op.cpu_usage(args.interval)
-    second = server_op.network()
+    second = sc_op.network()
 
     rx = int((second["rx"] - first["rx"]) / (args.interval * 1024))
     tx = int((second["tx"] - first["tx"]) / (args.interval * 1024))
 
-    process = server_op.processes()
+    process = sc_op.processes()
 
     ping = ""
+
+    items = {
+        "rx": rx,
+        "tx": tx,
+        "process": process,
+        "drives": drive_str,
+        "ping": ping,
+        "freeMem": mem_free,
+        "MemTotal": mem_total,
+        "cpuUse": cpu_use,
+        "uptime": uptime,
+        "hdd": int(hdd),
+        "thdd": int(thdd),
+    }
+
+    title = ""
+    descr = ""
+    status = agent_model.REPORT_LEVEL_PASS
+
     return agent_model.AgentItem(
-        rx=rx,
-        tx=tx,
-        process=process,
-        drives=drive_str,
-        ping=ping,
-        freeMem=mem_free,
-        MemTotal=mem_total,
-        cpuUse=cpu_use,
-        uptime=uptime,
-        hdd=int(hdd),
-        thdd=int(thdd),
+        summary=title,
+        description=descr.strip(),
+        host_name=hostname,
+        source_name="server",
+        check_name="statuscake",
+        date=date,
+        status_name=status,
+        service_name="statuscake",
+        tags={
+            "statuscake_agent_items": items,
+            "interval": args.interval,
+        },
     )
 
 

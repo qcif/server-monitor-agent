@@ -157,9 +157,9 @@ def processes() -> typing.List[server_model.ProcessResult]:
         "username": "USER",
     }
     count = 0
-    for p in psutil.process_iter(list(attrs.keys()), ad_value=None):
+    for p in psutil.process_iter(attrs=list(attrs.keys()), ad_value=None):
         count += 1
-        info = p.info
+        info = p.info if hasattr(p, "info") else p
 
         user = info.get("username") or "(unknown)"
         if user and psutil.WINDOWS and "\\" in user:
@@ -207,27 +207,30 @@ def user_message(
     """Submit a message to display to all users logged in to the local machine."""
     users = f"users in group {user_group}" if user_group else "all users"
 
-    check_type = item.check_type
-    date = item.date
+    summary = item.summary
     description = item.description
     host_name = item.host_name
-    service_name = item.service_name
     source_name = item.source_name
-    status_code = item.status_code
+    check_name = item.check_name
+    date = item.date
     status_name = item.status_name
-    title = item.title
+    service_name = item.service_name
+    tags = item.tags
 
+    date_format = "%a, %d %b %Y %H:%M:%S %Z"
     message = "\n".join(
         [
-            f"On {date}, {service_name} (from {source_name}, host {host_name}):",
+            f"On {date.strftime(date_format)}, {service_name} (from {source_name}, host {host_name}):",
             "",
-            title,
+            summary,
             description,
             "",
             f"Sent to {users}",
             "",
-            f"Status: {status_name} ({status_code})",
-            f"Check: {check_type}",
+            f"Status: {status_name}",
+            f"Check: {check_name}",
+            f"Tags:",
+            *[f"{k}={v}" for k, v in tags.items()],
         ]
     )
 
@@ -248,18 +251,8 @@ def user_message(
 
 
 @beartype.beartype
-def write_stream(
-    out_format: str, out_target: str, item: agent_model.ExternalItem
-) -> None:
-    # get content
-    if out_format == agent_model.FORMAT_AGENT:
-        content = item.to_json()
-    else:
-        options = make_options(agent_model.FORMATS_OUT)
-        raise ValueError(
-            f"Unrecognised format for output: {out_format}. "
-            f"Must be one of {options}."
-        )
+def write_stream(out_target: str, item: agent_model.ExternalItem) -> None:
+    content = item.to_json()
 
     # write content
     if out_target == agent_model.STREAM_STDOUT:

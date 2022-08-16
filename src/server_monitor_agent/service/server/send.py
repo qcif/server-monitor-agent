@@ -1,4 +1,5 @@
 """Commands related to a server instance."""
+import typing
 
 import click
 
@@ -19,11 +20,10 @@ from server_monitor_agent.service.server import model as server_model
     "-g",
     "--user-group",
     "user_group",
-    required=True,
     type=str,
 )
 @click.pass_context
-def users_message_output(ctx: click.Context, user_group: str):
+def users_message_output(ctx: click.Context, user_group: typing.Optional[str]):
     """Send an alert to logged-in users."""
     ctx.obj = server_model.LoggedInUsersSendArgs(user_group=user_group)
     agent_io.check_send_context(ctx)

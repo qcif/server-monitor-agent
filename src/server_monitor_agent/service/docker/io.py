@@ -51,31 +51,26 @@ def container_status_input(
         actual_health = show.health
 
     status = agent_model.REPORT_LEVEL_PASS
-    status_code = agent_model.REPORT_CODE_PASS
 
     descr_items = []
     if expected_state == states_running and actual_state != states_running:
         status = agent_model.REPORT_LEVEL_CRIT
-        status_code = agent_model.REPORT_CODE_CRIT
         descr_items.append("Container was expected to be running, but was not.")
 
     if expected_health == healths_healthy and actual_health is None:
         status = agent_model.REPORT_LEVEL_WARN
-        status_code = agent_model.REPORT_CODE_WARN
         descr_items.append(
             "Container health was expected to be healthy, but was not available."
         )
 
     if expected_health == healths_healthy and actual_health != healths_healthy:
         status = agent_model.REPORT_LEVEL_CRIT
-        status_code = agent_model.REPORT_CODE_CRIT
         descr_items.append(
             "Container health was expected to be healthy, but it was not."
         )
 
     if exit_code != 0:
         status = agent_model.REPORT_LEVEL_CRIT
-        status_code = agent_model.REPORT_CODE_CRIT
         descr_items.append("Container state check was not successful.")
 
     hostname = server_op.hostname()
@@ -95,17 +90,20 @@ def container_status_input(
         )
 
     return agent_model.AgentItem(
-        service_name=f"container {actual_name}",
+        summary=title,
+        description=descr.strip(),
         host_name=hostname,
         source_name="docker",
-        status_code=status_code,
-        status_name=status,
-        title=title,
-        description=descr.strip(),
-        check_type=cmd_name,
+        check_name="container",
         date=date,
+        status_name=status,
+        service_name=args.name,
         tags={
             "container_name": actual_name,
+            "expected_state": args.state,
+            "expected_health": args.health,
+            "actual_state": actual_state,
+            "actual_health": actual_health,
         },
     )
 

@@ -24,7 +24,7 @@ def stream_input(args: server_model.StreamInputCollectArgs) -> agent_model.Agent
 def stream_output(
     args: server_model.StreamOutputSendArgs, item: agent_model.AgentItem
 ) -> None:
-    server_op.write_stream(args.format, args.target, item)
+    server_op.write_stream(args.target, item.to_format(args.format))
 
 
 @beartype.beartype
@@ -38,7 +38,7 @@ def users_message_output(
 def cpu_status_input(args: server_model.CpuCollectArgs) -> agent_model.AgentItem:
     """Build the agent item for the device cpu usage."""
 
-    hostname_result = server_op.hostname()
+    hostname = server_op.hostname()
     date = server_op.timezone().now
 
     usage = server_op.cpu_usage(interval=args.interval)
@@ -60,7 +60,7 @@ def cpu_status_input(args: server_model.CpuCollectArgs) -> agent_model.AgentItem
     return agent_model.AgentItem(
         summary=title,
         description=descr.strip(),
-        host_name=hostname_result,
+        host_name=hostname,
         source_name="server",
         check_name="cpu",
         date=date,
@@ -101,21 +101,23 @@ def memory_status_input(
         )
 
     return agent_model.AgentItem(
-        service_name="memory",
-        host_name=hostname,
-        source_name="instance",
-        status_code=status_code,
-        status_name=status,
-        title=title,
+        summary=title,
         description=descr.strip(),
-        check_type=cmd_name,
+        host_name=hostname,
+        source_name="server",
+        check_name="memory",
         date=date,
+        status_name=status,
+        service_name="memory",
         tags={
             "total": str(usage.total),
             "available": str(usage.available),
             "percent": str(usage.percent),
             "used": str(usage.used),
             "free": str(usage.free),
+            "percentage": percent,
+            "amount_gib": amount_gib,
+            "threshold": threshold,
         },
     )
 

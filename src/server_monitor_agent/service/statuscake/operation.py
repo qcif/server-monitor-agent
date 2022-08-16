@@ -1,9 +1,11 @@
+import logging
 import math
 
 import beartype
+import requests
 from beartype import typing
 
-from server_monitor_agent.agent import model as agent_model
+from server_monitor_agent.agent import model as agent_model, operation as agent_op
 from server_monitor_agent.service.disk import operation as disk_op
 from server_monitor_agent.service.server import (
     model as server_model,
@@ -83,10 +85,10 @@ def processes() -> str:
 @beartype.beartype
 def submit_statuscake(item: agent_model.AgentItem) -> None:
     """Send data to statuscake url."""
-    raise NotImplementedError()
+
     url = ""  # "https://agent.statuscake.com"
 
-    response = requests.post(url=url, json=data)
+    response = requests.post(url=url, json=item.tags.get("statuscake_agent_items", {}))
 
     agent_op.log_msg(logging.DEBUG, f"Result from '{url}': {response}")
 

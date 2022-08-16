@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import subprocess
+import sys
 
 import beartype
 import click
@@ -34,6 +35,7 @@ def execute_process(args: typing.Sequence[str]):
             check=False,
             text=True,
         )
+        print(f"Process result: {result}", file=sys.stderr)
         return result
     except FileNotFoundError as e:
         raise ValueError(f"Error running '{' '.join(args)}'") from e

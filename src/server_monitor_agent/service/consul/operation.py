@@ -26,7 +26,7 @@ def health_checks(
         options = agent_op.make_options(agent_model.FORMATS_OUT)
         raise ValueError(f"Unrecognised state: '{state}'. Must be one of {options}.")
 
-    req = settings.request_api(settings, path=f"health/state/{state}")
+    req = settings.request_api(f"health/state/{state}")
     data = req.json()
     items = consul_model.ConsulHealthCheckExternalItem.from_items(data)
     return items

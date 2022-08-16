@@ -14,9 +14,20 @@ from server_monitor_agent.service.systemd import model as systemd_model
     invoke_without_command=True,
 )
 @click.option("-n", "--name", "name", required=True, type=str)
+@click.option(
+    "-a",
+    "--attributes",
+    "attributes",
+    type=(str, str, str),
+    multiple=True,
+    help="The expected attribute name, comparison, and value.",
+)
 @click.pass_context
-def systemd_unit_status(ctx: Context, name: str):
-    ctx.obj = systemd_model.SystemdUnitStatusCollectArgs(name=name)
+def systemd_unit_status(
+    ctx: Context, name: str, attributes: list[tuple[str, str, str]]
+):
+    attrs = agent_model.NameValueComparisonsEntry.from_tuple_list(attributes)
+    ctx.obj = systemd_model.SystemdUnitStatusCollectArgs(name=name, attributes=attrs)
     agent_io.check_collect_context(ctx)
 
 

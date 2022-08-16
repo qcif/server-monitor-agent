@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 8500, host: 8500
 
   # sync folder using rsync option
-  rsync_exclude_list = %w[.vagrant/ .git/ .idea/ coverage-html/ __pycache__/ venv/ .venv/ .tox/ .pytest_cache/]
+  rsync_exclude_list = %w[.vagrant/ .git/ .idea/ coverage-html/ __pycache__/ venv/ .venv/ .tox/ .pytest_cache/ build/]
   config.vm.synced_folder '.', guest_src_dir, type: "rsync", rsync__exclude: rsync_exclude_list
 
   # --- Common Options ---
