@@ -1,4 +1,5 @@
 import click
+from beartype import typing
 from click import Context
 
 from server_monitor_agent.agent import io as agent_io, model as agent_model
@@ -24,7 +25,7 @@ from server_monitor_agent.service.systemd import model as systemd_model
 )
 @click.pass_context
 def systemd_unit_status(
-    ctx: Context, name: str, attributes: list[tuple[str, str, str]]
+    ctx: Context, name: str, attributes: typing.List[typing.Tuple[str, str, str]]
 ):
     attrs = agent_model.NameValueComparisonsEntry.from_tuple_list(attributes)
     ctx.obj = systemd_model.SystemdUnitStatusCollectArgs(name=name, attributes=attrs)

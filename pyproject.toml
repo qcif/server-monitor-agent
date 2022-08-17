@@ -91,10 +91,11 @@ legacy_tox_ini = """
 [tox]
 isolated_build = True
 envlist = py37,py38,py39,py310,py311-dev
+#envlist = py310
 toxworkdir = {homedir}/tox-app
 
 [testenv]
-# recreate = true
+recreate = true
 deps =
     -rrequirements.txt
     -rrequirements-dev.txt

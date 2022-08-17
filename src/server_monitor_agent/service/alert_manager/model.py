@@ -18,9 +18,9 @@ class AlertManagerSendArgs(agent_model.SendArgs):
 @beartype.beartype
 @dataclasses.dataclass
 class AlertManagerExternalItem(agent_model.ExternalItem):
-    labels: dict
+    labels: typing.Dict
     generator_url: typing.Optional[str] = None
     starts_at: typing.Optional[datetime.datetime] = None
     ends_at: typing.Optional[datetime.datetime] = None
-    annotations: dict = dataclasses.field(default_factory=dict)
-    additional_properties: dict = dataclasses.field(default_factory=dict)
+    annotations: typing.Dict = dataclasses.field(default_factory=dict)
+    additional_properties: typing.Dict = dataclasses.field(default_factory=dict)

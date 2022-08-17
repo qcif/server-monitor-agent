@@ -30,7 +30,7 @@ class ConsulWatchExternalItem(agent_model.ExternalItem):
 
     @classmethod
     @beartype.beartype
-    def from_item(cls, item: dict) -> "ConsulWatchExternalItem":
+    def from_item(cls, item: typing.Dict) -> "ConsulWatchExternalItem":
         return ConsulWatchExternalItem(
             node=item["Node"],
             check_id=item["CheckID"],
@@ -45,7 +45,7 @@ class ConsulWatchExternalItem(agent_model.ExternalItem):
     @classmethod
     @beartype.beartype
     def from_items(
-        cls, items: typing.List[dict]
+        cls, items: typing.List[typing.Dict]
     ) -> typing.List["ConsulWatchExternalItem"]:
         return [cls.from_item(item) for item in items]
 
@@ -68,12 +68,12 @@ class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
     output: str  # consul: output from command
     service_id: str  # consul: unique service id
     service_name: str  # consul: non-unique service name
-    service_tags: list[str]  # consul: tags applied to the service
+    service_tags: typing.List[str]  # consul: tags applied to the service
     namespace: str  # consul: enterprise-only namespace
 
     @classmethod
     @beartype.beartype
-    def from_item(cls, item: dict) -> "ConsulHealthCheckExternalItem":
+    def from_item(cls, item: typing.Dict) -> "ConsulHealthCheckExternalItem":
         return ConsulHealthCheckExternalItem(
             node=item["Node"],
             check_id=item["CheckID"],
@@ -90,7 +90,7 @@ class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
     @classmethod
     @beartype.beartype
     def from_items(
-        cls, items: typing.List[dict]
+        cls, items: typing.List[typing.Dict]
     ) -> typing.List["ConsulHealthCheckExternalItem"]:
         return [cls.from_item(item) for item in items]
 

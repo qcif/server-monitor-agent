@@ -3,7 +3,7 @@ from collections import namedtuple
 import pytest
 from psutil._common import sdiskpart, sdiskusage, snetio
 
-import data.completed_process_examples
+from tests.data import completed_process_examples as cp_eg
 
 
 @pytest.fixture(autouse=True)
@@ -13,6 +13,7 @@ def methods_require_mock(monkeypatch):
     items = [
         "server_monitor_agent.agent.operation.execute_process",
         "requests.sessions.Session.request",
+        "smtplib.SMTP_SSL",
     ]
 
     def create_func(method_name):
@@ -133,9 +134,20 @@ def methods_return_known(monkeypatch):
 @pytest.fixture
 def execute_process_setup(monkeypatch):
     def execute_process(args):
-        for item in data.completed_process_examples.examples:
+        match_any = "__MATCH_ANY__"
+        for item in cp_eg.examples:
+
             if args == item.args:
                 return item
+
+            if match_any in item.args:
+                match_any_index = item.args.index(match_any)
+                args_without = args[:match_any_index] + args[match_any_index + 1 :]
+                item_args_without = (
+                    item.args[:match_any_index] + item.args[match_any_index + 1 :]
+                )
+                if args_without == item_args_without:
+                    return item
         raise ValueError(f"Must handle args '{args}'.")
 
     monkeypatch.setattr(

@@ -1,7 +1,7 @@
 import pathlib
-import typing
 
 import click
+from beartype import typing
 
 from server_monitor_agent.agent import io as agent_io, model as agent_model
 from server_monitor_agent.service.consul import model as consul_model

@@ -11,17 +11,48 @@ from server_monitor_agent.service.web import model as web_model
     help="Send an email.",
     short_help="Send an email.",
 )
-@click.option("-h", "--host", "host", help="The email server host.")
-@click.option("-p", "--port", "port", help="The email server port.")
-@click.option("-u", "--user", "username", help="The email username.")
-@click.option("-w", "--password", "password", help="The email password.")
 @click.option(
-    "-f", "--from", "from_address", help="The email address that sent the message."
+    "-h",
+    "--host",
+    "host",
+    required=True,
+    help="The email server host.",
+)
+@click.option(
+    "-p",
+    "--port",
+    "port",
+    type=int,
+    required=True,
+    help="The email server port.",
+)
+@click.option(
+    "-u",
+    "--user",
+    "username",
+    required=True,
+    help="The email username.",
+)
+@click.option(
+    "-w",
+    "--password",
+    "password",
+    required=True,
+    help="The email password.",
+)
+@click.option(
+    "-f",
+    "--from",
+    "from_address",
+    required=True,
+    help="The email address that sent the message.",
 )
 @click.option(
     "-t",
     "--to",
     "to_addresses",
+    type=str,
+    required=True,
     multiple=True,
     help="The email addresses that will receive the message.",
 )

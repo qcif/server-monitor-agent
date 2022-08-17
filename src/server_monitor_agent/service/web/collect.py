@@ -1,4 +1,5 @@
 import click
+from beartype import typing
 from click import Context
 
 from server_monitor_agent.agent import io as agent_io, model as agent_model
@@ -66,10 +67,10 @@ def web_app_status(
     ctx: Context,
     url: str,
     method: str,
-    headers: list[tuple[str, str]],
+    headers: typing.Sequence[typing.Tuple[str, str]],
     status_code: int,
-    response_headers: list[tuple[str, str, str]],
-    response_content: list[tuple[str, str]],
+    response_headers: typing.Sequence[typing.Tuple[str, str, str]],
+    response_content: typing.Sequence[typing.Tuple[str, str]],
 ):
     request = web_model.UrlRequestEntry(url=url, method=method, headers=dict(headers))
 

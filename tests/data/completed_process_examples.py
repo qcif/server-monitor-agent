@@ -513,4 +513,57 @@ examples = [
         ),
         stderr="",
     ),
+    subprocess.CompletedProcess(
+        args=["wall", "--timeout", "30", "--group", "testers", "__MATCH_ANY__"],
+        returncode=0,
+        stdout="",
+        stderr="",
+    ),
+    subprocess.CompletedProcess(
+        args=[
+            "journalctl",
+            "--no-hostname",
+            "--all",
+            "--no-pager",
+            "--output=json-pretty",
+            "--unit",
+            "docker.service",
+            "--output-fields=MESSAGE,JOB_RESULT,UNIT,_HOSTNAME,__REALTIME_TIMESTAMP",
+        ],
+        returncode=0,
+        stdout="\n".join(
+            [
+                json.dumps(i)
+                for i in [
+                    {
+                        "__REALTIME_TIMESTAMP": "1657541038550955",
+                        "_HOSTNAME": "ubuntu2004.localdomain",
+                        "UNIT": "systemd-resolved.service",
+                        "__CURSOR": "s=6c99dd1e82de44aea1aaa3b6c36fa848;i=26b;b=e54ea59916734121bff1faaf8726b2ca;m=4af18f;t=5e38658cdafab;x=b2c6ab1450d0bc7c",
+                        "__MONOTONIC_TIMESTAMP": "4911503",
+                        "_BOOT_ID": "e54ea59916734121bff1faaf8726b2ca",
+                        "MESSAGE": "Starting Network Name Resolution...",
+                    },
+                    {
+                        "MESSAGE": "Using degraded feature set (UDP+EDNS0+DO) for DNS server 4.2.2.1.",
+                        "__CURSOR": "s=6c99dd1e82de44aea1aaa3b6c36fa848;i=210f;b=a16cffca10a34c6ca8d0c7bd8c8d72e9;m=267cbffa;t=5e58bc4d8a4ee;x=4b268077332cd0e3",
+                        "_HOSTNAME": "server-monitor-agent",
+                        "_BOOT_ID": "a16cffca10a34c6ca8d0c7bd8c8d72e9",
+                        "__MONOTONIC_TIMESTAMP": "645709818",
+                        "__REALTIME_TIMESTAMP": "1659763349300462",
+                    },
+                    {
+                        "__REALTIME_TIMESTAMP": "1659881862544332",
+                        "__CURSOR": "s=6c99dd1e82de44aea1aaa3b6c36fa848;i=984d;b=a16cffca10a34c6ca8d0c7bd8c8d72e9;m=1bbe6d56d8;t=5e5a75cc93bcc;x=c3148366d30f179",
+                        "_BOOT_ID": "a16cffca10a34c6ca8d0c7bd8c8d72e9",
+                        "UNIT": "systemd-resolved.service",
+                        "MESSAGE": "Stopping Network Name Resolution...",
+                        "__MONOTONIC_TIMESTAMP": "119158953688",
+                        "_HOSTNAME": "server-monitor-agent",
+                    },
+                ]
+            ]
+        ),
+        stderr="",
+    ),
 ]

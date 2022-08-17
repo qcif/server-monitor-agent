@@ -113,11 +113,11 @@ def get_version() -> typing.Optional[str]:
         # ignore error
         pass
 
-    return None
+    return "(version not available)"
 
 
 @beartype.beartype
-def read_config(path: pathlib.Path) -> typing.Optional[dict[str, typing.Any]]:
+def read_config(path: pathlib.Path) -> typing.Optional[typing.Dict[str, typing.Any]]:
     with path.open("rt") as f:
         return yaml.safe_load(f)
 

@@ -1,7 +1,6 @@
 """Commands related to a server instance."""
-import typing
-
 import click
+from beartype import typing
 
 from server_monitor_agent.agent import (
     io as agent_io,

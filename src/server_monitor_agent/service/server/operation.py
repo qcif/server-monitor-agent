@@ -165,28 +165,28 @@ def processes() -> typing.List[server_model.ProcessResult]:
         if user and psutil.WINDOWS and "\\" in user:
             user = user.split("\\")[1]
         user = user[:9]
-        pid = info["pid"]
-        vms = info["memory_info"].vms or 0
-        rss = info["memory_info"].rss or 0
+        pid = info.get("pid")
+        vms = info.get("memory_info").vms if info.get("memory_info") else 0
+        rss = info.get("memory_info").rss if info.get("memory_info") else 0
 
-        mem_raw = info["memory_percent"]
-        memp = round(mem_raw, 1) if mem_raw is not None else None
+        mem_raw = info.get("memory_percent")
+        mem_p = round(mem_raw, 1) if mem_raw is not None else None
 
-        cpu_raw = info["cpu_percent"]
-        cpup = round(cpu_raw, 1) if cpu_raw is not None else None
+        cpu_raw = info.get("cpu_percent")
+        cpu_p = round(cpu_raw, 1) if cpu_raw is not None else None
 
-        if info["cmdline"]:
+        if info.get("cmdline"):
             cmdline = " ".join(info["cmdline"])
         else:
-            cmdline = info["name"]
+            cmdline = info.get("name")
 
         result.append(
             server_model.ProcessResult(
                 exit_code=0,
                 user=user,
                 pid=pid,
-                cpu_percent=cpup,
-                mem_percent=memp,
+                cpu_percent=cpu_p,
+                mem_percent=mem_p,
                 vms=vms,
                 rss=rss,
                 cmdline=cmdline,
@@ -280,6 +280,10 @@ def read_stream(in_source: str, in_format: str) -> agent_model.ExternalItem:
             f"Unrecognised stream read source '{in_source}'. "
             f"Must be one of {options}."
         )
+
+    if not content or not content.strip():
+        raise ValueError(f"Must provide content to input stream {in_source}.")
+
     # get content
     if in_format == agent_model.FORMAT_AGENT:
         return agent_model.AgentItem.from_json(content)

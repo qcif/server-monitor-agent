@@ -2,11 +2,11 @@ import inspect
 
 from click.testing import CliRunner
 
-import data.expected_commands
 from server_monitor_agent.agent import (
     command as agent_command,
     registry as agent_registry,
 )
+from tests.data import expected_commands as ex_cmd
 
 
 def test_main(tmp_path):
@@ -49,10 +49,10 @@ Commands:
 
 
 def test_gather_commands():
-    expected_collect = data.expected_commands.expected_items["collect"]
+    expected_collect = ex_cmd.expected_items["collect"]
     expected_collect_cmds = [i["command"] for i in expected_collect]
 
-    expected_send = data.expected_commands.expected_items["send"]
+    expected_send = ex_cmd.expected_items["send"]
     expected_send_cmds = [i["command"] for i in expected_send]
 
     reg = agent_registry.CommandRegistry()
@@ -72,10 +72,10 @@ def test_gather_commands():
 
 
 def test_gather_io():
-    expected_collect = data.expected_commands.expected_items["collect"]
+    expected_collect = ex_cmd.expected_items["collect"]
     expected_collect_args = [i["args"] for i in expected_collect]
 
-    expected_send = data.expected_commands.expected_items["send"]
+    expected_send = ex_cmd.expected_items["send"]
     expected_send_args = [i["args"] for i in expected_send]
 
     reg = agent_registry.SourceTargetIORegistry()
@@ -104,7 +104,7 @@ def test_command_links():
         for cmd_name, cmd_data in group_data.commands.items():
             actual.append((group_name, cmd_name))
 
-    expected = data.expected_commands.expected_items["pairs"]
+    expected = ex_cmd.expected_items["pairs"]
     for i in expected:
         assert i in actual
 

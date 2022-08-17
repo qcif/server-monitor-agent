@@ -39,8 +39,8 @@ class BaseRegistry(abc.ABC):
 class CommandRegistry(BaseRegistry):
     """Gathers and adds cli commands."""
 
-    collect_commands: list[agent_model.RegisterCollectCmd] = []
-    send_commands: list[agent_model.RegisterSendCmd] = []
+    collect_commands: typing.List[agent_model.RegisterCollectCmd] = []
+    send_commands: typing.List[agent_model.RegisterSendCmd] = []
 
     @beartype.beartype
     def collect_module(self, service_name: str) -> str:
@@ -108,8 +108,8 @@ class CommandRegistry(BaseRegistry):
 class SourceTargetIORegistry(BaseRegistry):
     """Gather and link 'collect' source inputs and 'send' target outputs."""
 
-    collect_inputs: list[agent_model.RegisterCollectInput] = []
-    send_outputs: list[agent_model.RegisterSendOutput] = []
+    collect_inputs: typing.List[agent_model.RegisterCollectInput] = []
+    send_outputs: typing.List[agent_model.RegisterSendOutput] = []
 
     @beartype.beartype
     def io_module(self, service_name: str) -> str:

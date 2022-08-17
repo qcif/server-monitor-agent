@@ -37,8 +37,8 @@ class RequestUrlCollectArgs(agent_model.CollectArgs):
 @dataclasses.dataclass
 class UrlResponseResult(agent_model.OpResult):
     match_status: bool
-    match_content: typing.List[dict]
-    match_headers: typing.List[dict]
+    match_content: typing.List[typing.Dict]
+    match_headers: typing.List[typing.Dict]
 
 
 @beartype.beartype

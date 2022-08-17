@@ -110,11 +110,15 @@ class CliArgs:
 class CollectArgs(abc.ABC):
     """Arguments for collecting information."""
 
+    pass
+
 
 @beartype.beartype
 @dataclasses.dataclass
 class SendArgs(abc.ABC):
     """Arguments for sending information."""
+
+    pass
 
 
 @beartype.beartype
@@ -283,6 +287,8 @@ class NameValueComparisonsEntry:
 class RegisterCmd(abc.ABC):
     """Register a command."""
 
+    pass
+
 
 @beartype.beartype
 @dataclasses.dataclass
@@ -305,6 +311,8 @@ class RegisterSendCmd(RegisterCmd):
 @dataclasses.dataclass
 class RegisterIO(abc.ABC):
     """Register an input or output."""
+
+    pass
 
 
 TypeCollectArgs = typing.TypeVar("T", bound=CollectArgs, covariant=True)
