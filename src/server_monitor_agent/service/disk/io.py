@@ -7,7 +7,11 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-from server_monitor_agent.agent import model as agent_model, operation as agent_op
+from server_monitor_agent.agent import (
+    model as agent_model,
+    operation as agent_op,
+    convert as agent_convert,
+)
 from server_monitor_agent.service.disk import model as disk_model, operation as disk_op
 from server_monitor_agent.service.server import operation as server_op
 
@@ -53,7 +57,7 @@ def disk_status_input(args: disk_model.DiskCollectArgs) -> agent_model.AgentItem
         date=date,
         status_name=status,
         service_name=path or "(unknown)",
-        tags={
+        extra_data={
             "fstype": partition.fstype,
             "device": partition.device,
             "uuid": mnt.uuid,
@@ -69,14 +73,19 @@ def disk_status_input(args: disk_model.DiskCollectArgs) -> agent_model.AgentItem
 
 @beartype.beartype
 def file_input(args: disk_model.FileInputCollectArgs) -> agent_model.AgentItem:
-    return disk_op.read_file(args.format, args.path).to_agent_item()
+    content = disk_op.read_file(args.path)
+    data = agent_convert.from_content(content, "json")
+    item = agent_convert.to_agent_item(data, args.format)
+    return item
 
 
 @beartype.beartype
 def file_output(
     args: disk_model.FileOutputSendArgs, item: agent_model.AgentItem
 ) -> None:
-    disk_op.write_file(args.path, item.to_format(args.format))
+    data = agent_convert.from_agent_item(item, args.format)
+    content = agent_convert.to_content(data, "json")
+    disk_op.write_file(args.path, content)
 
 
 @beartype.beartype
@@ -100,7 +109,7 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
     states_available = [states_present, states_absent]
 
     if args.state not in states_available:
-        raise ValueError(f"State must be one of '{', '.join(states_available)}'.")
+        agent_op.raise_options("state", args.state, states_available)
 
     content_contains = "contains"
     content_not_contains = "not_contains"
@@ -194,7 +203,7 @@ def file_status_input(args: disk_model.FileStatusCollectArgs) -> agent_model.Age
         date=date,
         status_name=status,
         service_name=str(path),
-        tags={
+        extra_data={
             "exists": exists,
             "expected_state": args.state,
         },

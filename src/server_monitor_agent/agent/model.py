@@ -3,7 +3,6 @@
 import abc
 import dataclasses
 import datetime
-import json
 import logging
 import pathlib
 
@@ -81,11 +80,13 @@ REPORT_CODES = [
 ]
 
 # input and output formats
-FORMAT_AGENT = "agent"
-FORMAT_CONSUL_WATCH = "consul-watch"
-
-FORMATS_IN = [FORMAT_AGENT, FORMAT_CONSUL_WATCH]
-FORMATS_OUT = [FORMAT_AGENT]
+FORMAT_DEFAULT = "agent-item"
+FORMATS = [
+    "agent-item",
+    "prom-alert-manager",
+    "consul-watch-check",
+    "consul-health-check-state",
+]
 
 # input and output streams
 STREAM_STDOUT = "stdout"
@@ -134,28 +135,41 @@ class OpResult(abc.ABC):
 class ExternalItem(abc.ABC):
     """A data item for external structured input and output."""
 
+    @classmethod
+    @abc.abstractmethod
+    def data_type_name(cls):
+        raise NotImplementedError("Must implement format_name.")
+
+    @abc.abstractmethod
     @beartype.beartype
-    def to_json(self) -> str:
-        raise NotImplementedError()
+    def to_dict(self) -> typing.Dict:
+        raise NotImplementedError("Must implement to_dict.")
 
     @classmethod
+    @abc.abstractmethod
     @beartype.beartype
-    def from_json(cls, value: str) -> "ExternalItem":
-        raise NotImplementedError()
-
-    @beartype.beartype
-    def to_format(self, format_name: str) -> "ExternalItem":
-        raise NotImplementedError()
-
-    @classmethod
-    @beartype.beartype
-    def from_format(cls, item: "ExternalItem") -> "ExternalItem":
-        raise NotImplementedError()
+    def from_dict(cls, item: typing.Dict) -> "ExternalItem":
+        raise NotImplementedError("Must implement from_dict.")
 
 
 @beartype.beartype
 @dataclasses.dataclass
-class AgentItem(ExternalItem):
+class AgentItemConvertMixin(abc.ABC):
+    @abc.abstractmethod
+    @beartype.beartype
+    def to_agent_item(self) -> "AgentItem":
+        raise NotImplementedError("Must implement to_agent_item.")
+
+    @classmethod
+    @abc.abstractmethod
+    @beartype.beartype
+    def from_agent_item(cls, item: "AgentItem") -> "ExternalItem":
+        raise NotImplementedError("Must implement from_agent_item.")
+
+
+@beartype.beartype
+@dataclasses.dataclass
+class AgentItem(ExternalItem, AgentItemConvertMixin):
     """The data required for the agent input and output format."""
 
     summary: str
@@ -184,12 +198,16 @@ class AgentItem(ExternalItem):
     service_name: str
     """The name of the service that was checked."""
 
-    tags: typing.Dict[str, typing.Any] = dataclasses.field(default_factory=dict)
+    extra_data: typing.Dict[str, typing.Any] = dataclasses.field(default_factory=dict)
     """Optional key=value entries for arbitrary information.
     This may not be displayed."""
 
+    @classmethod
+    def data_type_name(cls):
+        return "agent-item"
+
     @beartype.beartype
-    def to_json(self) -> str:
+    def to_dict(self) -> typing.Dict:
         data = dataclasses.asdict(self)
 
         date_fields = ["date"]
@@ -197,20 +215,23 @@ class AgentItem(ExternalItem):
             if data[date_field]:
                 data[date_field] = data[date_field].isoformat(timespec="seconds")
 
-        return json.dumps(data, indent=2)
+        return data
 
     @classmethod
     @beartype.beartype
-    def from_json(cls, value: str) -> "AgentItem":
-        try:
-            raw = json.loads(value)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Could not read input in agent format: '{value}'.") from e
+    def from_dict(cls, item: typing.Dict) -> "AgentItem":
+        raw = {**item}
+        if "date" in raw and raw["date"]:
+            raw["date"] = datetime.datetime.fromisoformat(raw["date"])
+        return cls(**raw)
 
-        if not isinstance(raw, dict):
-            raise ValueError(f"Could not read input in agent format: '{value}'.")
+    @beartype.beartype
+    def to_agent_item(self) -> "AgentItem":
+        return self
 
-        item = AgentItem(**raw)
+    @classmethod
+    @beartype.beartype
+    def from_agent_item(cls, item: "AgentItem") -> "ExternalItem":
         return item
 
 
@@ -261,7 +282,7 @@ class NameValueComparisonsEntry:
     comparisons: typing.List[TextCompareEntry]
 
     @classmethod
-    def from_tuple_list(cls, items: typing.List[typing.Tuple[str, str, str]]):
+    def from_tuple_list(cls, items: typing.Sequence[typing.Tuple[str, str, str]]):
         raw = {}
         for name, comparison, value in items:
             if name not in raw:
@@ -323,11 +344,6 @@ TypeCollectArgs = typing.TypeVar("T", bound=CollectArgs, covariant=True)
 class RegisterCollectInput(RegisterIO):
     """Register a source input."""
 
-    # Expected type '(CollectArgs) -> AgentItem',
-    # got 'Union[
-    # (args: HealthCheckCollectArgs) -> AgentItem,
-    # ((args: HealthCheckCollectArgs) -> AgentItem) -> (args: HealthCheckCollectArgs) -> AgentItem
-    # ]' instead
     func: typing.Callable[[TypeCollectArgs], AgentItem]
 
 
@@ -341,42 +357,3 @@ class RegisterSendOutput(RegisterCmd):
 
     func: typing.Callable[[TypeSendArgs, AgentItem], None]
     collect_only: typing.Optional[typing.Iterable[str]] = None
-
-
-#
-# class LoggingMixin:
-#     _crit = ("critical", logging.CRITICAL)
-#     _err = ("error", logging.ERROR)
-#     _warn = ("warning", logging.WARNING)
-#     _info = ("info", logging.INFO)
-#     _debug = ("debug", logging.DEBUG)
-#
-#     @classmethod
-#     def logging_choices(cls) -> typing.List[str]:
-#         return [cls._crit[0], cls._err[0], cls._warn[0], cls._info[0], cls._debug[0]]
-#
-#     @classmethod
-#     def logging_value(cls, name: str) -> int:
-#         options: dict = {
-#             k: v for k, v in [cls._crit, cls._err, cls._warn, cls._info, cls._debug]
-#         }
-#         if not name:
-#             raise ValueError("Must specify a logging level.")
-#         if name not in options:
-#             raise ValueError(
-#                 f"Invalid logging level '{name}'. "
-#                 f"Available names are {', '.join(cls.logging_choices())}"
-#             )
-#         return options[name]
-#
-#
-# class DateTimeMixin:
-#     _display = "%a, %d %b %Y %H:%M:%S %Z"
-#
-#     def date_display(self, value: datetime) -> str:
-#         return value.strftime(self._display)
-#
-#     def date_parse(self, value: str) -> Optional[datetime]:
-#         if not value or not value.strip():
-#             return None
-#         return dateparser.parse(value)

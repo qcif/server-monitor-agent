@@ -86,8 +86,8 @@ def memory(ctx: click.Context, threshold: int):
     "-f",
     "--format",
     "in_format",
-    default=agent_model.FORMAT_AGENT,
-    type=click.Choice(agent_model.FORMATS_IN, case_sensitive=False),
+    default=agent_model.FORMAT_DEFAULT,
+    type=click.Choice(agent_model.FORMATS, case_sensitive=False),
     help="Set the input format.",
 )
 @click.pass_context

@@ -21,6 +21,7 @@ def health_checks_input(
     items = consul_op.health_checks(args.to_settings, agent_model.REPORT_LEVEL_ANY)
     checks = [dataclasses.asdict(i) for i in items]
 
+    # TODO: build summary and description and status
     title = ""
     descr = ""
     status = agent_model.REPORT_LEVEL_PASS
@@ -33,7 +34,7 @@ def health_checks_input(
         date=date,
         status_name=status,
         service_name=args.name,
-        tags={"checks": checks},
+        extra_data={"checks": checks},
     )
 
 

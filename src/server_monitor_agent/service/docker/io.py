@@ -6,7 +6,7 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-from server_monitor_agent.agent import model as agent_model
+from server_monitor_agent.agent import model as agent_model, operation as agent_op
 from server_monitor_agent.service.docker import (
     model as docker_model,
     operation as docker_op,
@@ -29,11 +29,11 @@ def container_status_input(
 
     expected_state = args.state
     if expected_state not in states_available:
-        raise ValueError(f"State must be one of '{', '.join(states_available)}'.")
+        agent_op.raise_options("state", expected_state, states_available)
 
     expected_health = args.health
     if expected_health not in healths_available:
-        raise ValueError(f"Health must be one of '{', '.join(healths_available)}'.")
+        agent_op.raise_options("health level", expected_health, healths_available)
 
     expected_name = args.name
 
@@ -98,7 +98,7 @@ def container_status_input(
         date=date,
         status_name=status,
         service_name=args.name,
-        tags={
+        extra_data={
             "container_name": actual_name,
             "expected_state": args.state,
             "expected_health": args.health,

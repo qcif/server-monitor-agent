@@ -90,8 +90,8 @@ src_paths = ["src"]
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py37,py38,py39,py310,py311-dev
-#envlist = py310
+#envlist = py37,py38,py39,py310,py311-dev
+envlist = py310
 toxworkdir = {homedir}/tox-app
 
 [testenv]
@@ -100,9 +100,10 @@ deps =
     -rrequirements.txt
     -rrequirements-dev.txt
 commands =
-    coverage run -m pytest
-    black --check src
-    flake8 src --count --show-source --statistics
+    pytest --tb=no --durations=5
+    # coverage run -m pytest
+    # black --check src
+    # flake8 src --count --show-source --statistics
     # pydocstyle src
     # mypy src
     # pylint src

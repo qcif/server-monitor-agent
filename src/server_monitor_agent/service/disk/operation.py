@@ -10,7 +10,6 @@ import psutil
 from beartype import typing
 
 from server_monitor_agent.agent import model as agent_model, operation as agent_op
-from server_monitor_agent.agent.operation import make_options
 from server_monitor_agent.service.disk import model as disk_model
 
 logger = logging.getLogger(f"{agent_model.APP_NAME_UNDER}.device.disk")
@@ -61,7 +60,10 @@ def disk_partitions(
         break
 
     if partition is None:
-        raise ValueError(f"No partition matched path '{path}' device '{device}'.")
+        raise ValueError(
+            f"No partition matched path '{path}' device '{device}' "
+            f"source '{source}' target '{target}'."
+        )
     return partition
 
 
@@ -219,18 +221,7 @@ def df() -> typing.List[disk_model.DfResult]:
 
 
 @beartype.beartype
-def write_file(out_target: pathlib.Path, item: agent_model.ExternalItem) -> None:
-    # get content
-    if out_format == agent_model.FORMAT_AGENT:
-        content = item.to_json()
-    else:
-        options = make_options(agent_model.FORMATS_OUT)
-        raise ValueError(
-            f"Unrecognised format for file output: {out_format}. "
-            f"Must be one of {options}."
-        )
-
-    # write content
+def write_file(out_target: pathlib.Path, content: str) -> None:
     if not out_target:
         raise ValueError(f"Must provide path to write.")
 
@@ -239,24 +230,9 @@ def write_file(out_target: pathlib.Path, item: agent_model.ExternalItem) -> None
 
 
 @beartype.beartype
-def read_file(
-    in_format: str,
-    in_target: pathlib.Path,
-) -> agent_model.AgentItem:
-    # read content
+def read_file(in_target: pathlib.Path) -> str:
     if not in_target or not in_target.exists():
         raise ValueError(f"File to read must exist: '{in_target}'.")
 
     content = in_target.read_text(encoding="utf8")
-
-    # get content
-    if in_format == agent_model.FORMAT_AGENT:
-        return agent_model.AgentItem.from_json(content)
-
-    if in_format == agent_model.FORMAT_CONSUL_WATCH:
-        return agent_model.AgentItem.from_consul_watch(content)
-
-    options = make_options(agent_model.FORMATS_IN)
-    raise ValueError(
-        f"Unrecognised format for file input: {in_format}. Must be one of {options}"
-    )
+    return content

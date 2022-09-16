@@ -8,7 +8,11 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-from server_monitor_agent.agent import model as agent_model, operation as agent_op
+from server_monitor_agent.agent import (
+    model as agent_model,
+    operation as agent_op,
+    convert as agent_convert,
+)
 from server_monitor_agent.service.server import (
     model as server_model,
     operation as server_op,
@@ -17,14 +21,19 @@ from server_monitor_agent.service.server import (
 
 @beartype.beartype
 def stream_input(args: server_model.StreamInputCollectArgs) -> agent_model.AgentItem:
-    return server_op.read_stream(args.source, args.format).to_agent_item()
+    content = server_op.read_stream(args.source)
+    data = agent_convert.from_content(content, "json")
+    item = agent_convert.to_agent_item(data, args.format)
+    return item
 
 
 @beartype.beartype
 def stream_output(
     args: server_model.StreamOutputSendArgs, item: agent_model.AgentItem
 ) -> None:
-    server_op.write_stream(args.target, item.to_format(args.format))
+    data = agent_convert.from_agent_item(item, args.format)
+    content = agent_convert.to_content(data, "json")
+    server_op.write_stream(args.target, content)
 
 
 @beartype.beartype
@@ -66,7 +75,7 @@ def cpu_status_input(args: server_model.CpuCollectArgs) -> agent_model.AgentItem
         date=date,
         status_name=status,
         service_name="cpu",
-        tags={"threshold": args.threshold, "usage": usage},
+        extra_data={"threshold": args.threshold, "usage": usage},
     )
 
 
@@ -109,7 +118,7 @@ def memory_status_input(
         date=date,
         status_name=status,
         service_name="memory",
-        tags={
+        extra_data={
             "total": str(usage.total),
             "available": str(usage.available),
             "percent": str(usage.percent),

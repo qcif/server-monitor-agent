@@ -11,7 +11,6 @@ import psutil
 from beartype import typing
 
 from server_monitor_agent.agent import model as agent_model, operation as agent_op
-from server_monitor_agent.agent.operation import make_options
 from server_monitor_agent.service.server import model as server_model
 
 logger = logging.getLogger(f"{agent_model.APP_NAME_UNDER}.device.instance")
@@ -215,7 +214,7 @@ def user_message(
     date = item.date
     status_name = item.status_name
     service_name = item.service_name
-    tags = item.tags
+    extra_data = item.extra_data
 
     date_format = "%a, %d %b %Y %H:%M:%S %Z"
     message = "\n".join(
@@ -230,7 +229,7 @@ def user_message(
             f"Status: {status_name}",
             f"Check: {check_name}",
             f"Tags:",
-            *[f"{k}={v}" for k, v in tags.items()],
+            *[f"{k}={v}" for k, v in extra_data.items()],
         ]
     )
 
@@ -251,10 +250,7 @@ def user_message(
 
 
 @beartype.beartype
-def write_stream(out_target: str, item: agent_model.ExternalItem) -> None:
-    content = item.to_json()
-
-    # write content
+def write_stream(out_target: str, content: str) -> None:
     if out_target == agent_model.STREAM_STDOUT:
         sys.stdout.write(content)
 
@@ -262,37 +258,12 @@ def write_stream(out_target: str, item: agent_model.ExternalItem) -> None:
         sys.stderr.write(content)
 
     else:
-        options = make_options(agent_model.STREAM_TARGETS)
-        raise ValueError(
-            f"Unrecognised stream write target '{out_target}'. "
-            f"Must be one of {options}."
-        )
+        agent_op.raise_options("stream target", out_target, agent_model.STREAM_TARGETS)
 
 
 @beartype.beartype
-def read_stream(in_source: str, in_format: str) -> agent_model.ExternalItem:
-    # read content
+def read_stream(in_source: str) -> str:
     if in_source == agent_model.STREAM_STDIN:
-        content = sys.stdin.read()
-    else:
-        options = make_options(agent_model.STREAM_SOURCES)
-        raise ValueError(
-            f"Unrecognised stream read source '{in_source}'. "
-            f"Must be one of {options}."
-        )
+        return sys.stdin.read()
 
-    if not content or not content.strip():
-        raise ValueError(f"Must provide content to input stream {in_source}.")
-
-    # get content
-    if in_format == agent_model.FORMAT_AGENT:
-        return agent_model.AgentItem.from_json(content)
-
-    if in_format == agent_model.FORMAT_CONSUL_WATCH:
-        return agent_model.AgentItem.from_consul_watch(content)
-
-    options = make_options(agent_model.FORMATS_IN)
-    raise ValueError(
-        f"Unrecognised format for stream input: {in_format}. "
-        f"Must be one of {options}"
-    )
+    agent_op.raise_options("stream source", in_source, agent_model.STREAM_SOURCES)

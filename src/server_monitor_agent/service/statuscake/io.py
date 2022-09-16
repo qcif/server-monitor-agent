@@ -51,6 +51,7 @@ def statuscake_input(
         "thdd": int(thdd),
     }
 
+    # TODO: build summary, description, status
     title = ""
     descr = ""
     status = agent_model.REPORT_LEVEL_PASS
@@ -64,7 +65,7 @@ def statuscake_input(
         date=date,
         status_name=status,
         service_name="statuscake",
-        tags={
+        extra_data={
             "statuscake_agent_items": items,
             "interval": args.interval,
         },

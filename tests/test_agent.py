@@ -2,17 +2,44 @@ import inspect
 
 from click.testing import CliRunner
 
-from server_monitor_agent.agent import (
-    command as agent_command,
-    registry as agent_registry,
-)
+from server_monitor_agent.agent import registry as agent_registry
 from tests.data import expected_commands as ex_cmd
 
 
-def test_main(tmp_path):
+def test_main(tmp_path, mocker, requests_mock):
+
+    execute_process_mock = mocker.patch(
+        "server_monitor_agent.agent.operation.execute_process"
+    )
+    smtp_mock = mocker.patch("smtplib.SMTP_SSL", autospec=True)
+    platform_node_mock = mocker.patch("platform.node")
+    socket_fqdn_mock = mocker.patch("socket.getfqdn")
+
+    pu_cpu_percent_mock = mocker.patch("psutil.cpu_percent")
+    pu_disk_partitions_mock = mocker.patch("psutil.disk_partitions")
+    pu_disk_usage_mock = mocker.patch("psutil.disk_usage")
+    pu_process_iter_mock = mocker.patch("psutil.process_iter")
+    pu_boot_time_mock = mocker.patch("psutil.boot_time")
+    pu_virtual_memory_mock = mocker.patch("psutil.virtual_memory")
+    pu_net_io_counters_mock = mocker.patch("psutil.net_io_counters")
+
+    from server_monitor_agent.agent import command as agent_command
+
     runner = CliRunner(mix_stderr=False)
     with runner.isolated_filesystem(temp_dir=tmp_path):
         result = runner.invoke(agent_command.cli)
+
+    execute_process_mock.assert_not_called()
+    smtp_mock.assert_not_called()
+    platform_node_mock.assert_not_called()
+    socket_fqdn_mock.assert_not_called()
+    pu_cpu_percent_mock.assert_not_called()
+    pu_disk_partitions_mock.assert_not_called()
+    pu_disk_usage_mock.assert_not_called()
+    pu_process_iter_mock.assert_not_called()
+    pu_boot_time_mock.assert_not_called()
+    pu_virtual_memory_mock.assert_not_called()
+    pu_net_io_counters_mock.assert_not_called()
 
     assert result.exit_code == 1
     assert result.stdout == ""
@@ -99,6 +126,8 @@ def test_gather_io():
 
 
 def test_command_links():
+    from server_monitor_agent.agent import command as agent_command
+
     actual = []
     for group_name, group_data in agent_command.cli.commands.items():
         for cmd_name, cmd_data in group_data.commands.items():

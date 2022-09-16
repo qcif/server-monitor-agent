@@ -11,10 +11,10 @@ from server_monitor_agent.agent import model as agent_model
 
 @beartype.beartype
 @dataclasses.dataclass
-class ConsulWatchExternalItem(agent_model.ExternalItem):
+class ConsulWatchCheckItem(agent_model.ExternalItem, agent_model.AgentItemConvertMixin):
     """A consul watch item that can be a collect source."""
 
-    # https://www.consul.io/docs/dynamic-app-config/watches
+    # Docs: https://www.consul.io/docs/dynamic-app-config/watches#checks
 
     node: str  # consul: node name
     check_id: str  # consul: unique check id
@@ -29,9 +29,26 @@ class ConsulWatchExternalItem(agent_model.ExternalItem):
     service_name: str  # consul: non-unique service name
 
     @classmethod
+    def data_type_name(cls):
+        return "consul-watch-check"
+
     @beartype.beartype
-    def from_item(cls, item: typing.Dict) -> "ConsulWatchExternalItem":
-        return ConsulWatchExternalItem(
+    def to_dict(self) -> typing.Dict:
+        return {
+            "Node": self.node,
+            "CheckID": self.check_id,
+            "Name": self.name,
+            "Status": self.status,
+            "Notes": self.notes,
+            "Output": self.output,
+            "ServiceID": self.service_id,
+            "ServiceName": self.service_name,
+        }
+
+    @classmethod
+    @beartype.beartype
+    def from_dict(cls, item: typing.Dict) -> "ConsulWatchCheckItem":
+        return ConsulWatchCheckItem(
             node=item["Node"],
             check_id=item["CheckID"],
             name=item["Name"],
@@ -42,20 +59,60 @@ class ConsulWatchExternalItem(agent_model.ExternalItem):
             service_name=item["ServiceName"],
         )
 
+    @beartype.beartype
+    def to_agent_item(self) -> "agent_model.AgentItem":
+        key = "consul_watch_check_item"
+
+        raise NotImplementedError()
+        summary = ""
+        description = ""
+        source_name = ""
+        check_name = ""
+        date = ""
+        status_name = ""
+        return agent_model.AgentItem(
+            summary=summary,
+            description=description,
+            host_name=self.node,
+            source_name=source_name,
+            check_name=check_name,
+            date=date,
+            status_name=status_name,
+            service_name=self.service_name,
+            extra_data={
+                key: self.to_dict(),
+            },
+        )
+
     @classmethod
     @beartype.beartype
-    def from_items(
-        cls, items: typing.List[typing.Dict]
-    ) -> typing.List["ConsulWatchExternalItem"]:
-        return [cls.from_item(item) for item in items]
+    def from_agent_item(cls, item: "agent_model.AgentItem") -> "ConsulWatchCheckItem":
+        key = "consul_watch_check_item"
+        if key in item.extra_data:
+            return cls(**item.extra_data[key])
+
+        raise NotImplementedError()
+        return cls(
+            node="",
+            check_id="",
+            name="",
+            status="",
+            notes="",
+            output="",
+            service_id="",
+            service_name="",
+        )
 
 
 @beartype.beartype
 @dataclasses.dataclass
-class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
-    """A consul health check status item."""
+class ConsulHealthCheckStateItem(
+    agent_model.ExternalItem, agent_model.AgentItemConvertMixin
+):
+    """A consul health check state item."""
 
-    # https://www.consul.io/api-docs/health#list-checks-in-state
+    # Docs: https://www.consul.io/api-docs/health#list-checks-in-state
+    # Endpoint: /health/state/:state
 
     node: str  # consul: node name
     check_id: str  # consul: unique check id
@@ -69,12 +126,92 @@ class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
     service_id: str  # consul: unique service id
     service_name: str  # consul: non-unique service name
     service_tags: typing.List[str]  # consul: tags applied to the service
-    namespace: str  # consul: enterprise-only namespace
+    namespace: typing.Optional[str] = None  # consul: enterprise-only namespace
+
+    # {
+    #         "Node": "test-wsu-blue.redboxresearchdata.com.au",
+    #         "CheckID": "system-mem-usage-check",
+    #         "Name": "system-mem-usage-check",
+    #         "Status": "passing",
+    #         "Notes": "This health check runs a script that checks for instance's memory usage.",
+    #         "Output": "[2022-08-23 17:00:56 +1000] [INFO] [usage-mem.sh] Memory available: 68% (available); 72% (free + buff/cache)\n[2022-08-23 17:00:56 +1000] [INFO] [usage-mem.sh] Memory used: 32%\n[2022-08-23 17:00:56 +1000] [INFO] [usage-mem.sh] Memory usage normal (threshold 15):\n              total        used        free      shared  buff/cache   available\nMem:           7.5G        2.1G        481M         13M        4.9G        5.1G\nSwap:            0B          0B          0B\n",
+    #         "ServiceID": "",
+    #         "ServiceName": "",
+    #         "ServiceTags": [],
+    #         "Type": "",
+    #         "Definition": {
+    #             "Interval": "0s",
+    #             "Timeout": "0s",
+    #             "DeregisterCriticalServiceAfter": "0s",
+    #             "HTTP": "",
+    #             "Header": null,
+    #             "Method": "",
+    #             "Body": "",
+    #             "TLSServerName": "",
+    #             "TLSSkipVerify": false,
+    #             "TCP": "",
+    #             "GRPC": "",
+    #             "GRPCUseTLS": false
+    #         },
+    #         "CreateIndex": 15246266,
+    #         "ModifyIndex": 19970059
+    #     }
+
+    #  {
+    #         "Node": "aws-prod-qcifeng-consul-02",
+    #         "CheckID": "apt-auto-update-check-last-run",
+    #         "Name": "apt-auto-update-check-last-run",
+    #         "Status": "passing",
+    #         "Notes": "Information about the need for a restart and most recent update run.",
+    #         "Output": "File exists '/var/run/reboot-required':\n*** System restart required ***\n\nFile exists '/var/run/reboot-required.pkgs':\nlinux-image-5.13.0-1028-aws\nlinux-base\nlinux-image-5.13.0-1029-aws\nlinux-base\nlinux-image-5.13.0-1031-aws\nlinux-base\nlibssl1.1\nlibssl1.1\nlinux-image-5.15.0-1015-aws\nlinux-base\nlinux-image-5.15.0-1017-aws\nlinux-base\n\nFile exists '/var/lib/apt/periodic/unattended-upgrades-stamp':\n2022-08-23 06:47:53.459392248 +1000\n\nFile exists '/var/lib/apt/periodic/update-success-stamp':\n2022-08-23 02:59:38.173098693 +1000\n",
+    #         "ServiceID": "apt-auto-update",
+    #         "ServiceName": "apt-auto-update",
+    #         "ServiceTags": [
+    #             "application",
+    #             "security"
+    #         ],
+    #         "Type": "script",
+    #         "Definition": {
+    #             "Interval": "0s",
+    #             "Timeout": "0s",
+    #             "DeregisterCriticalServiceAfter": "0s",
+    #             "HTTP": "",
+    #             "Header": null,
+    #             "Method": "",
+    #             "Body": "",
+    #             "TLSServerName": "",
+    #             "TLSSkipVerify": false,
+    #             "TCP": "",
+    #             "GRPC": "",
+    #             "GRPCUseTLS": false
+    #         },
+    #         "CreateIndex": 16866146,
+    #         "ModifyIndex": 19952627
+    #     },
+
+    @classmethod
+    def data_type_name(cls):
+        return "consul-health-check-state"
+
+    @beartype.beartype
+    def to_dict(self) -> typing.Dict:
+        return {
+            "Node": self.node,
+            "CheckID": self.check_id,
+            "Name": self.name,
+            "Status": self.status,
+            "Notes": self.notes,
+            "Output": self.output,
+            "ServiceID": self.service_id,
+            "ServiceName": self.service_name,
+            "ServiceTags": self.service_tags,
+            "Namespace": self.namespace,
+        }
 
     @classmethod
     @beartype.beartype
-    def from_item(cls, item: typing.Dict) -> "ConsulHealthCheckExternalItem":
-        return ConsulHealthCheckExternalItem(
+    def from_dict(cls, item: typing.Dict) -> "ConsulHealthCheckStateItem":
+        return ConsulHealthCheckStateItem(
             node=item["Node"],
             check_id=item["CheckID"],
             name=item["Name"],
@@ -87,12 +224,53 @@ class ConsulHealthCheckExternalItem(agent_model.ExternalItem):
             namespace=item["Namespace"],
         )
 
+    @beartype.beartype
+    def to_agent_item(self) -> "agent_model.AgentItem":
+        key = "consul_watch_check_item"
+
+        raise NotImplementedError()
+        summary = ""
+        description = ""
+        source_name = ""
+        check_name = ""
+        date = ""
+        status_name = ""
+        return agent_model.AgentItem(
+            summary=summary,
+            description=description,
+            host_name=self.node,
+            source_name=source_name,
+            check_name=check_name,
+            date=date,
+            status_name=status_name,
+            service_name=self.service_name,
+            extra_data={
+                key: self.to_dict(),
+            },
+        )
+
     @classmethod
     @beartype.beartype
-    def from_items(
-        cls, items: typing.List[typing.Dict]
-    ) -> typing.List["ConsulHealthCheckExternalItem"]:
-        return [cls.from_item(item) for item in items]
+    def from_agent_item(
+        cls, item: "agent_model.AgentItem"
+    ) -> "ConsulHealthCheckStateItem":
+        key = "consul_health_check_state_item"
+        if key in item.extra_data:
+            return cls(**item.extra_data[key])
+
+        raise NotImplementedError()
+        return cls(
+            node="",
+            check_id="",
+            name="",
+            status="",
+            notes="",
+            output="",
+            service_id="",
+            service_name="",
+            service_tags=[],
+            namespace="",
+        )
 
 
 @beartype.beartype

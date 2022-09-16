@@ -123,6 +123,11 @@ def read_config(path: pathlib.Path) -> typing.Optional[typing.Dict[str, typing.A
 
 
 @beartype.beartype
-def make_options(items: typing.Iterable[str]) -> str:
-    opts = "', '".join(items or ["(none)"])
-    return f"'{opts}'"
+def make_options(name: str, item: typing.Any, available: typing.Iterable[str]) -> str:
+    opts = ",".join(available or ["(none)"])
+    return f"Unrecognised {name}: '{item}'. Must be one of '{opts}'."
+
+
+@beartype.beartype
+def raise_options(name: str, item: typing.Any, available: typing.Iterable[str]) -> None:
+    raise ValueError(make_options(name, item, available))

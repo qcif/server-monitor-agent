@@ -3,11 +3,9 @@ from collections import namedtuple
 import pytest
 from psutil._common import sdiskpart, sdiskusage, snetio
 
-from tests.data import completed_process_examples as cp_eg
 
-
-@pytest.fixture(autouse=True)
-def methods_require_mock(monkeypatch):
+@pytest.fixture()
+def methods_require_mock(monkeypatch, mocker):
     """Throw error for methods that are slow or can't be used in tests."""
 
     items = [
@@ -16,17 +14,8 @@ def methods_require_mock(monkeypatch):
         "smtplib.SMTP_SSL",
     ]
 
-    def create_func(method_name):
-        def raise_instead(*args, **kwargs):
-            raise ValueError(
-                f"Must set {method_name} method for args '{args}' kwargs '{kwargs}'."
-            )
-
-        return raise_instead
-
     for item in items:
-        func = create_func(item)
-        monkeypatch.setattr(item, func)
+        mocker.patch(item, autospec=True)
 
 
 svmem = namedtuple(
@@ -47,7 +36,7 @@ svmem = namedtuple(
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def methods_return_known(monkeypatch):
     """Replace real results with known results."""
 
@@ -129,29 +118,3 @@ def methods_return_known(monkeypatch):
     for k, v in items.items():
         func = create_func(v)
         monkeypatch.setattr(k, func)
-
-
-@pytest.fixture
-def execute_process_setup(monkeypatch):
-    def execute_process(args):
-        match_any = "__MATCH_ANY__"
-        for item in cp_eg.examples:
-
-            if args == item.args:
-                return item
-
-            if match_any in item.args:
-                match_any_index = item.args.index(match_any)
-                args_without = args[:match_any_index] + args[match_any_index + 1 :]
-                item_args_without = (
-                    item.args[:match_any_index] + item.args[match_any_index + 1 :]
-                )
-                if args_without == item_args_without:
-                    return item
-        raise ValueError(f"Must handle args '{args}'.")
-
-    monkeypatch.setattr(
-        "server_monitor_agent.agent.operation.execute_process", execute_process
-    )
-
-    return execute_process

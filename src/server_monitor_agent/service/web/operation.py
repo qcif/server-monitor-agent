@@ -1,6 +1,6 @@
+import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from smtplib import SMTPException, SMTP_SSL
 
 import beartype
 import requests
@@ -66,14 +66,14 @@ def submit_email(
     # send message
     result = {}
     try:
-        with SMTP_SSL(mail_host, mail_port) as server:
+        with smtplib.SMTP_SSL(mail_host, mail_port) as server:
             result["login"] = server.login(mail_user, mail_pass)
             result["send"] = server.sendmail(
                 msg_from_address, msg_to_addresses, msg.as_string()
             )
             server.close()
 
-    except SMTPException as e:
+    except smtplib.SMTPException as e:
         result["error"] = e
 
     return result

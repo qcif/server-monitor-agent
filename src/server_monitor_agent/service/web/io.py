@@ -10,10 +10,13 @@ def email_message_output(
     args: web_model.EmailMessageSendArgs, item: agent_model.AgentItem
 ) -> None:
     subject = item.summary
+
     # TODO: improve body content
     body_text = item.description
+
     # TODO: create html version
     body_html = item.description
+
     web_op.submit_email(
         mail_host=args.host,
         mail_port=args.port,

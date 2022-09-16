@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 
 import beartype
 
@@ -42,22 +43,32 @@ def unit_status_input(
     else:
         status = agent_model.REPORT_LEVEL_CRIT
 
-    date = args.date_parse(
-        show.state_change_time_stamp
-        or show.exec_main_exit_timestamp
-        or show.exec_main_start_timestamp
-        or show.active_exit_timestamp
-        or show.active_enter_timestamp
-        or show.inactive_exit_timestamp
-        or show.inactive_enter_timestamp
-    )
+    dates_available = [
+        show.state_change_time_stamp,
+        show.exec_main_exit_timestamp,
+        show.exec_main_start_timestamp,
+        show.active_exit_timestamp,
+        show.active_enter_timestamp,
+        show.inactive_exit_timestamp,
+        show.inactive_enter_timestamp,
+    ]
+    date_formats = ["%a %Y-%m-%d %H:%M:%S %Z"]
+    date = None
+    for date_available in dates_available:
+        if date_available:
+            for date_format in date_formats:
+                try:
+                    date = datetime.datetime.strptime(date_available, date_format)
+                    break
+                except ValueError:
+                    pass
 
+    if not date:
+        raise ValueError(f"None of the available dates provided a usable date.")
+
+    # TODO: build summary, description
     title = ""
     descr = ""
-
-    tags = {
-        k: v for k, v in dataclasses.asdict(show).items() if v is not None and v != ""
-    }
 
     return agent_model.AgentItem(
         summary=title,
@@ -68,7 +79,11 @@ def unit_status_input(
         date=date,
         status_name=status,
         service_name=args.name,
-        tags=tags,
+        extra_data={
+            k: v
+            for k, v in dataclasses.asdict(show).items()
+            if v is not None and v != ""
+        },
     )
 
 
@@ -81,11 +96,12 @@ def unit_logs_input(
 
     logs = systemd_op.journalctl(args.name)
 
-    tags = {}
+    extra_data = {}
     log_subset = [i.message for i in sorted(logs, key=lambda x: x.timestamp)][:20]
     for index, log in enumerate(log_subset):
-        tags[f"log{index + 1}"] = log
+        extra_data[f"log{index + 1}"] = log
 
+    # TODO: build summary, description, status
     title = ""
     descr = ""
     status = agent_model.REPORT_LEVEL_PASS
@@ -99,7 +115,7 @@ def unit_logs_input(
         date=date,
         status_name=status,
         service_name=args.name,
-        tags=tags,
+        extra_data=extra_data,
     )
 
 

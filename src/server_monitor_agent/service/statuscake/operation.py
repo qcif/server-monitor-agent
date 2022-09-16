@@ -88,7 +88,9 @@ def submit_statuscake(item: agent_model.AgentItem) -> None:
 
     url = ""  # "https://agent.statuscake.com"
 
-    response = requests.post(url=url, json=item.tags.get("statuscake_agent_items", {}))
+    response = requests.post(
+        url=url, json=item.extra_data.get("statuscake_agent_items", {})
+    )
 
     agent_op.log_msg(logging.DEBUG, f"Result from '{url}': {response}")
 

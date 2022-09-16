@@ -15,7 +15,7 @@ def leader_private_ipv4(settings: consul_model.ConsulConnectionSettings) -> str:
 def health_checks(
     settings: consul_model.ConsulConnectionSettings,
     state: typing.Optional[str] = None,
-) -> typing.Iterable[consul_model.ConsulHealthCheckExternalItem]:
+) -> typing.Iterable[consul_model.ConsulHealthCheckStateItem]:
 
     if not state or not state.strip():
         state = agent_model.REPORT_LEVEL_ANY
@@ -23,10 +23,9 @@ def health_checks(
     state = state.lower()
 
     if state not in agent_model.REPORT_LEVELS_ALL:
-        options = agent_op.make_options(agent_model.FORMATS_OUT)
-        raise ValueError(f"Unrecognised state: '{state}'. Must be one of {options}.")
+        agent_op.raise_options("state", state, agent_model.FORMATS)
 
     req = settings.request_api(f"health/state/{state}")
     data = req.json()
-    items = consul_model.ConsulHealthCheckExternalItem.from_items(data)
+    items = [consul_model.ConsulHealthCheckStateItem.from_dict(i) for i in data]
     return items

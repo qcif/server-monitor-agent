@@ -9,12 +9,12 @@ import click
 from server_monitor_agent.agent import (
     model as agent_model,
     operation as agent_op,
-    registry as agent_registry,
+    registry as agent_reg,
 )
 
 
 @beartype.beartype
-def check_collect_context(ctx: click.Context):
+def check_collect_context(ctx: click.Context) -> None:
     cub_cmd = ctx.invoked_subcommand
     if cub_cmd is None:
         click.echo(ctx.get_help(), err=True)
@@ -27,7 +27,7 @@ def check_collect_context(ctx: click.Context):
 
 
 @beartype.beartype
-def check_send_context(ctx: click.Context):
+def check_send_context(ctx: click.Context) -> None:
     agent_op.log_msg(logging.DEBUG, f"Running send {ctx.command.name}")
     agent_op.log_msg(logging.DEBUG, f"   Obj {ctx.obj}")
 
@@ -44,6 +44,6 @@ def execute_context(send_ctx: click.Context) -> None:
 def execute_args(
     collect_args: agent_model.CollectArgs, send_args: agent_model.SendArgs
 ) -> None:
-    io_reg = agent_registry.SourceTargetIORegistry()
+    io_reg = agent_reg.SourceTargetIORegistry()
     io_reg.gather()
-    return io_reg.run(collect_args, send_args)
+    io_reg.run(collect_args, send_args)
