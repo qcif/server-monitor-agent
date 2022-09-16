@@ -18,6 +18,8 @@ python_versions:
 guest_data_dir: "/home/{{ guest_user_name }}/data"
 guest_venv_dir: "/home/{{ guest_user_name }}/venv"
 app_venv_bin_path: "{{ guest_venv_dir }}/bin"
+app_bin_path: "{{ app_venv_bin_path }}/server-monitor-agent"
+app_version: '0.0.2'
 
 # docker
 # see https://keyserver.ubuntu.com/pks/lookup?search=docker%40docker.com&fingerprint=on&op=index

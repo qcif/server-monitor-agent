@@ -70,8 +70,8 @@ source ../.venv/bin/activate
 
 openapi-python-client.exe generate \
   --path prometheus-alertmanager-openapi-3.yml \
-  --meta poetry
+  --meta pip
 openapi-python-client.exe update \
   --path prometheus-alertmanager-openapi-3.yml \
-  --meta poetry
+  --meta pip
 ```

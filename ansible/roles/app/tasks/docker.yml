@@ -106,4 +106,5 @@
     mode: 'u=rw,g=r,o=r'
 
 - name: Start docker-compose services
-  ansible.builtin.command: "docker compose -f {{ docker_compose_dir }}/docker-compose.yml up --detach --wait --remove-orphans --quiet-pull --no-color"
+  ansible.builtin.command:
+    cmd: "docker compose -f {{ docker_compose_dir }}/docker-compose.yml --ansi never up --detach --wait --remove-orphans --quiet-pull --no-color"

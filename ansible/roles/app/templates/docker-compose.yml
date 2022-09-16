@@ -40,3 +40,6 @@ services:
       driver: 'journald'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    volumes:
+      - "/opt/consul-config:/consul/config:rw"
+      - "{{ guest_venv_dir }}:{{ guest_venv_dir }}:ro"

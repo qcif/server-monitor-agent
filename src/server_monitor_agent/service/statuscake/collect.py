@@ -10,7 +10,7 @@ from server_monitor_agent.service.statuscake import model as sc_model
     epilog="",
     help="Collect information required for the statuscake agent. "
     + agent_model.TEXT_CHOOSE_NOTIFICATION,
-    short_help="",
+    short_help="Collect data for the statuscake agent.",
     no_args_is_help=False,
     invoke_without_command=True,
 )

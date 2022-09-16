@@ -1,5 +1,7 @@
 [build-system]
-requires = ["setuptools>=63.0.0"]
+requires = [
+    "setuptools>=63.0.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,13 +9,6 @@ name = "server-monitor-agent"
 description = "Utility to run checks on a server and send notifications."
 readme = "README.md"
 requires-python = ">=3.7"
-authors = [
-    { name = "Mark Cottman-Fields", email = "mark.cottmanfields@qcif.edu.au" },
-]
-maintainers = [
-    { name = "Mark Cottman-Fields", email = "mark.cottmanfields@qcif.edu.au" },
-]
-license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
@@ -37,31 +32,42 @@ dynamic = [
 server-monitor-agent = 'server_monitor_agent.entry:main'
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["server_monitor_agent*"]
+where = [
+    "src",
+]
+# include and exclude accept strings representing glob patterns.
+include = [
+    "server_monitor_agent*",
+]
 
 [tool.setuptools.dynamic]
-version = { file = ["VERSION"] }
-dependencies = { file = ["requirements.txt"] }
+version = { file = [
+    "VERSION",
+] }
+dependencies = { file = [
+    "requirements.txt",
+] }
 
 [tool.setuptools.dynamic.optional-dependencies]
-dev = { file = ["requirements-dev.txt"] }
+dev = { file = [
+    "requirements-dev.txt",
+] }
 
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra --quiet"
 pythonpath = [
-    "src"
+    "src",
 ]
 testpaths = [
-    "tests"
+    "tests",
 ]
 
 [tool.coverage.run]
 # "Specifying the source option enables coverage.py to report on unexecuted files,
 # since it can search the source tree for files that haven’t been measured at all."
 source = [
-    'src'
+    'src',
 ]
 omit = [
     '*/site-packages/*',
@@ -74,49 +80,31 @@ skip_empty = true
 [tool.coverage.html]
 directory = "coverage-html"
 
-[[tool.mypy.overrides]]
-module = "colorama.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "psutil.*"
-ignore_missing_imports = true
-
 [tool.isort]
 profile = "black"
-src_paths = ["src"]
+src_paths = [
+    "src",
+]
 
 [tool.tox]
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-#envlist = py37,py38,py39,py310,py311-dev
-envlist = py310
+envlist = py37,py38,py39,py310,py311
 toxworkdir = {homedir}/tox-app
 
 [testenv]
-recreate = true
+# recreate = true
 deps =
-    -rrequirements.txt
-    -rrequirements-dev.txt
+    -r requirements.txt
+    -r requirements-dev.txt
 commands =
-    pytest --tb=no --durations=5
-    # coverage run -m pytest
-    # black --check src
-    # flake8 src --count --show-source --statistics
-    # pydocstyle src
-    # mypy src
-    # pylint src
-    # pyright src
+    coverage run -m pytest --tb=no --durations=5
+    server-monitor-agent --help
 """
-
-[[tool.mypy.overrides]]
-module = [
-    "zoneinfo",
-    "boltons"
-]
-ignore_missing_imports = true
-
 
 [tool.pydocstyle]
 ignore = 'D104'
+
+[tool.mypy]
+ignore_missing_imports = true

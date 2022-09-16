@@ -1,0 +1,25 @@
+---
+# Create consul checks as examples and tests for the app
+
+- name: Create consul dirs
+  become_user: root
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: u=rwx,g=rwx,o=rx
+  loop:
+    - "/opt/consul-config"
+
+- name: Consul services with checks
+  template:
+    src: '{{ item }}'
+    dest: '{{ consul_agent_config_ready_dir }}/{{ item }}'
+    force: true
+    backup: false
+    owner: 'root'
+    group: 'root'
+    mode: 'u=rw,g=r,o=r'
+  loop:
+    - consul-services-checks.hcl

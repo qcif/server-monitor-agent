@@ -12,12 +12,12 @@ Vagrant.configure("2") do |config|
 
   # --- Host and Guest Paths ---
 
-  # forwarded ports
-  config.vm.network "forwarded_port", guest: 1080, host: 1080
-  config.vm.network "forwarded_port", guest: 8500, host: 8500
-
   # sync folder using rsync option
-  rsync_exclude_list = %w[.vagrant/ .git/ .idea/ coverage-html/ __pycache__/ venv/ .venv/ .tox/ .pytest_cache/ build/]
+  rsync_exclude_list = %w[
+  .vagrant/ .git/ .idea/ .tox/ .pytest_cache/ __pycache__/
+  coverage-html/  venv/ .venv/
+  build/ dist/ server_monitor_agent.egg-info/
+  ]
   config.vm.synced_folder '.', guest_src_dir, type: "rsync", rsync__exclude: rsync_exclude_list
 
   # --- Common Options ---
@@ -116,5 +116,7 @@ Vagrant.configure("2") do |config|
         'python_version': python_version,
     }
   end
+
+  config.vm.network "forwarded_port", guest: 8500, host: 8500, host_ip: "127.0.0.1"
 
 end

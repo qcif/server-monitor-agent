@@ -1,0 +1,1 @@
+"""Collection and sending service."""

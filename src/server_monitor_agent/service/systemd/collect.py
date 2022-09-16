@@ -14,7 +14,14 @@ from server_monitor_agent.service.systemd import model as systemd_model
     no_args_is_help=False,
     invoke_without_command=True,
 )
-@click.option("-n", "--name", "name", required=True, type=str)
+@click.option(
+    "-n",
+    "--name",
+    "name",
+    required=True,
+    type=str,
+    help="The name of the systemd service.",
+)
 @click.option(
     "-a",
     "--attributes",
@@ -40,7 +47,14 @@ def systemd_unit_status(
     no_args_is_help=False,
     invoke_without_command=True,
 )
-@click.option("-n", "--name", "name", required=True, type=str)
+@click.option(
+    "-n",
+    "--name",
+    "name",
+    required=True,
+    type=str,
+    help="The name of the systemd service.",
+)
 @click.pass_context
 def systemd_unit_logs(ctx: Context, name: str):
     ctx.obj = systemd_model.SystemdUnitLogsCollectArgs(name=name)

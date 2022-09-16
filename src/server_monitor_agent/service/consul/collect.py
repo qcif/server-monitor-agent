@@ -44,28 +44,28 @@ from server_monitor_agent.service.consul import model as consul_model
     "--ca-cert-file",
     "ca_cert_file",
     type=click.Path(file_okay=True, dir_okay=False, path_type=pathlib.Path),
-    help="Path the CA cert file.",
+    help="Path to the CA cert file.",
 )
 @click.option(
     "-d",
     "--ca-cert-dir",
     "ca_cert_dir",
     type=click.Path(file_okay=False, dir_okay=True, path_type=pathlib.Path),
-    help="Path the CA cert dir.",
+    help="Path to the CA cert dir.",
 )
 @click.option(
     "-c",
     "--client-cert-file",
     "client_cert",
     type=click.Path(file_okay=True, dir_okay=False, path_type=pathlib.Path),
-    help="Path the client cert file.",
+    help="Path to the client cert file.",
 )
 @click.option(
     "-k",
     "--client-key-file",
     "client_key",
     type=click.Path(file_okay=True, dir_okay=False, path_type=pathlib.Path),
-    help="Path the client key file.",
+    help="Path to the client key file.",
 )
 @click.pass_context
 def consul_checks(

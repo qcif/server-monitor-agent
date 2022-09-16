@@ -24,6 +24,7 @@ def alert_manager(ctx: click.Context, base_url: str):
     agent_io.execute_context(ctx)
 
 
-register_commands = [
-    agent_model.RegisterSendCmd(alert_manager),
-]
+# TODO
+# register_commands = [
+#     agent_model.RegisterSendCmd(alert_manager),
+# ]
