@@ -1,19 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = [
+    "setuptools>=63.0.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "server-monitor-agent"
-version = "0.0.1"
-authors = [
-  { name="Mark" },
-]
-maintainers = [
-  { name="Mark" },
-]
-description = "A simple Python application for running checks on a server and sending formatted notifications."
+description = "Utility to run checks on a server and send notifications."
 readme = "README.md"
-license = { file="LICENSE" }
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -23,7 +17,93 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "Topic :: System :: Monitoring",
 ]
+dynamic = [
+    "version",
+    "dependencies",
+    "optional-dependencies",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/qcif/server-monitor-agent"
 "Bug Tracker" = "https://github.com/qcif/server-monitor-agent/issues"
+
+
+[project.scripts]
+server-monitor-agent = 'server_monitor_agent.entry:main'
+
+[tool.setuptools.packages.find]
+where = [
+    "src",
+]
+# include and exclude accept strings representing glob patterns.
+include = [
+    "server_monitor_agent*",
+]
+
+[tool.setuptools.dynamic]
+version = { file = [
+    "VERSION",
+] }
+dependencies = { file = [
+    "requirements.txt",
+] }
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = { file = [
+    "requirements-dev.txt",
+] }
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra --quiet"
+pythonpath = [
+    "src",
+]
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+# "Specifying the source option enables coverage.py to report on unexecuted files,
+# since it can search the source tree for files that haven’t been measured at all."
+source = [
+    'src',
+]
+omit = [
+    '*/site-packages/*',
+    'tests/*',
+]
+
+[tool.coverage.report]
+skip_empty = true
+
+[tool.coverage.html]
+directory = "coverage-html"
+
+[tool.isort]
+profile = "black"
+src_paths = [
+    "src",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py39,py310,py311
+
+[testenv]
+recreate = true
+deps =
+    -r requirements.txt
+    -r requirements-dev.txt
+commands =
+    server-monitor-agent --help
+    coverage run -m pytest --tb=no --durations=5
+"""
+
+[tool.pydocstyle]
+ignore = 'D104'
+
+[tool.mypy]
+ignore_missing_imports = true
