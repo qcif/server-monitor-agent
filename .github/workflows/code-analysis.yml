@@ -1,0 +1,57 @@
+name: Code Analysis
+
+on:
+  schedule:
+    - cron: '04 2 * * 4'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ "python" ]
+        python-version: [ "3.9", "3.10", "3.11" ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          echo "::group::Pip dependencies"
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade -r requirements-dev.txt -r requirements.txt
+          python -m pip install .
+          echo "::endgroup::"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          setup-python-dependencies: false
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+      - name: Run pip audit
+        uses: pypa/gh-action-pip-audit@v1.0.0
+        continue-on-error: true
+        with:
+          inputs: requirements.txt requirements-dev.txt
