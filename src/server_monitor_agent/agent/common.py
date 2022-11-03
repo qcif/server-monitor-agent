@@ -4,7 +4,11 @@ import socket
 import subprocess
 import typing
 from datetime import datetime
+from importlib import metadata, resources
 from zoneinfo import ZoneInfo
+
+APP_NAME_DASH = "server-monitor-agent"
+APP_NAME_UNDER = "server_monitor_agent"
 
 
 def get_hostname() -> str:
@@ -17,6 +21,25 @@ def get_hostname() -> str:
     # result = platform.node()
 
     return result
+
+
+def get_version() -> typing.Optional[str]:
+    """Get the version of this package."""
+    try:
+        dist = metadata.distribution(APP_NAME_DASH)
+        return dist.version
+    except metadata.PackageNotFoundError:
+        # ignore error
+        pass
+
+    try:
+        with resources.path(APP_NAME_UNDER, "entry.py") as p:
+            return (p.parent.parent.parent / "VERSION").read_text().strip()
+    except FileNotFoundError:
+        # ignore error
+        pass
+
+    return "(version not available)"
 
 
 def execute_process(args: typing.Sequence[str]):
@@ -41,6 +64,7 @@ class CheckReport(abc.ABC):
     hostname: str
     exit_code: int
     time_zone: str
+    check_type: str
     check_name: str
     description: str
 
@@ -63,7 +87,7 @@ class CheckReport(abc.ABC):
 
     def __str__(self):
         return (
-            f"{'PASSING' if self.exit_code == 0 else 'WARNING'}: "
+            f"{'PASSING' if self.exit_code == 0 else 'PROBLEM'}: "
             f"for '{self.check_name}' "
             f"on '{self.hostname}' "
             f"at {self.timestamp_formatted}"
@@ -79,11 +103,11 @@ class CheckReportProblem(CheckReport):
     def content_lines(self) -> typing.Sequence[str]:
         return [
             "----------------------",
-            f"⚠️🔴 WARNING: '{self.check_name}' on '{self.hostname}'",
-            f"at {self.timestamp_formatted} ({self.time_zone})",
-            f"**Problem**: {self.description}",
-            f"**Impact**: {self.impact}",
-            f"**Action**: {self.action}",
+            f"⚠️🔴 *PROBLEM*: `{self.check_name}` on `{self.hostname}`",
+            f"at {self.timestamp_formatted} ({self.time_zone}) for {self.check_type}",
+            f"_Description_: {self.description}",
+            f"_Impact_: {self.impact}",
+            f"_Action_: {self.action}",
             "----------------------",
         ]
 
@@ -96,23 +120,29 @@ class CheckReportOk(CheckReport):
     def content_lines(self) -> typing.Sequence[str]:
         return [
             "----------------------",
-            f"✔️🟢 PASSING: '{self.check_name}' on '{self.hostname}'",
-            f"at {self.timestamp_formatted}",
-            f"**Description**: {self.description}",
-            f"**Resolution**: {self.resolution}",
+            f"✔️🟢 *PASSING*: `{self.check_name}` on `{self.hostname}`",
+            f"at {self.timestamp_formatted} ({self.time_zone}) for {self.check_type}",
+            f"_Description_: {self.description}",
+            f"_Resolution_: {self.resolution}",
             "----------------------",
         ]
 
 
 def report_problem(
-    time_zone: str, check_name: str, description: str, impact: str, action: str
+    time_zone: str,
+    check_type: str,
+    check_name: str,
+    description: str,
+    impact: str,
+    action: str,
 ) -> CheckReportProblem:
     hostname = get_hostname()
 
     return CheckReportProblem(
         hostname=hostname,
-        exit_code=1,
+        exit_code=2,
         time_zone=time_zone,
+        check_type=check_type,
         check_name=check_name,
         description=description,
         impact=impact,
@@ -121,7 +151,7 @@ def report_problem(
 
 
 def report_ok(
-    time_zone: str, check_name: str, description: str, resolution: str
+    time_zone: str, check_type: str, check_name: str, description: str, resolution: str
 ) -> CheckReportOk:
     hostname = get_hostname()
 
@@ -129,6 +159,7 @@ def report_ok(
         hostname=hostname,
         exit_code=0,
         time_zone=time_zone,
+        check_type=check_type,
         check_name=check_name,
         description=description,
         resolution=resolution,

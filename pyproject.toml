@@ -93,12 +93,13 @@ isolated_build = True
 envlist = py39,py310,py311
 
 [testenv]
-recreate = true
+#recreate = true
 deps =
     -r requirements.txt
     -r requirements-dev.txt
 commands =
     server-monitor-agent --help
+    server-monitor-agent --version
     coverage run -m pytest --tb=no --durations=5
 """
 

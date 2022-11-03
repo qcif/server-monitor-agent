@@ -37,7 +37,8 @@ def service_detail(
     if info.check_status:
         return common.report_ok(
             time_zone=time_zone,
-            check_name="systemd-service",
+            check_type="systemd-service",
+            check_name=info.unit_name,
             description=" \n".join(
                 [f"Service '{info.unit_name}' is as expected."] + info.ok_lines + [""]
             ),
@@ -46,7 +47,8 @@ def service_detail(
     else:
         return common.report_problem(
             time_zone=time_zone,
-            check_name="systemd-service",
+            check_type="systemd-service",
+            check_name=info.unit_name,
             description=" \n".join(
                 [f"Service '{info.unit_name}' is in an unexpected state."]
                 + info.problem_lines
@@ -98,7 +100,8 @@ def timer_detail(
     if info.check_status:
         return common.report_ok(
             time_zone=time_zone,
-            check_name="systemd-timer",
+            check_type="systemd-timer",
+            check_name=info.unit_name,
             description=" \n".join(
                 [
                     f"Timer '{info.unit_name}' is as expected.",
@@ -113,7 +116,8 @@ def timer_detail(
     else:
         return common.report_problem(
             time_zone=time_zone,
-            check_name="systemd-timer",
+            check_type="systemd-timer",
+            check_name=info.unit_name,
             description=" \n".join(
                 [
                     f"Timer '{info.unit_name}' is in an unexpected state.",

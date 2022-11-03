@@ -12,6 +12,7 @@ def memory_usage_detail(time_zone: str, threshold: int) -> common.CheckReport:
     if result > threshold:
         return common.report_problem(
             time_zone=time_zone,
+            check_type="memory",
             check_name="memory",
             description=f"Memory usage is too high ({result}% is over {threshold}%).",
             impact="The server may become slow or unresponsive.",
@@ -21,6 +22,7 @@ def memory_usage_detail(time_zone: str, threshold: int) -> common.CheckReport:
     else:
         return common.report_ok(
             time_zone=time_zone,
+            check_type="memory",
             check_name="memory",
             description=f"Memory usage was too high (over {threshold}%, now {result}%).",
             resolution="Memory usage has reduced below the threshold.",
@@ -36,6 +38,7 @@ def cpu_usage_detail(
     if result > threshold:
         return common.report_problem(
             time_zone=time_zone,
+            check_type="cpu",
             check_name="cpu",
             description="Total CPU usage is too high "
             f"({result}% is over {threshold}%).",
@@ -46,6 +49,7 @@ def cpu_usage_detail(
     else:
         return common.report_ok(
             time_zone=time_zone,
+            check_type="cpu",
             check_name="cpu",
             description="Total CPU usage was too high "
             f"(over {threshold}%, now {result}%).",
@@ -90,6 +94,7 @@ def disk_usage_detail(
     if result > threshold:
         return common.report_problem(
             time_zone=time_zone,
+            check_type="disk",
             check_name="disk",
             description=f"Disk used space for '{mount_path}' is too high "
             f"({result}% is over {threshold}%).",
@@ -101,6 +106,7 @@ def disk_usage_detail(
     else:
         return common.report_ok(
             time_zone=time_zone,
+            check_type="disk",
             check_name="disk",
             description=f"Disk used space for '{mount_path}' was too high "
             f"(over {threshold}%, now {result}%).",

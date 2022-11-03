@@ -1,8 +1,9 @@
 import argparse
+import os
 import pathlib
 import typing
 
-from server_monitor_agent.agent import instance, service
+from server_monitor_agent.agent import consul, instance, monitor, service, common
 
 
 def memory_usage_cli(args: argparse.Namespace):
@@ -59,11 +60,47 @@ def systemd_timer_cli(args: argparse.Namespace):
     )
 
 
-def build():
-    parser = argparse.ArgumentParser(
-        description="Run a check on the local machine.",
+def consul_report_cli(args: argparse.Namespace):
+    time_zone = args.time_zone
+    cloud_name = args.cloud_name
+
+    # get consul connection info and slack url from env vars
+    http_addr = os.getenv("CONSUL_HTTP_ADDR") or None
+    http_ssl = os.getenv("CONSUL_HTTP_SSL") or None
+    http_ssl_verify = os.getenv("CONSUL_HTTP_SSL_VERIFY") or None
+    ca_cert = os.getenv("CONSUL_CACERT") or None
+    ca_path = os.getenv("CONSUL_CAPATH") or None
+    client_cert = os.getenv("CONSUL_CLIENT_CERT") or None
+    client_key = os.getenv("CONSUL_CLIENT_KEY") or None
+    conn = consul.ConsulConnection(
+        http_ssl_enabled=http_ssl == "true",
+        http_ssl_verify=http_ssl_verify == "true",
+        http_addr=http_addr,
+        ca_cert_file=pathlib.Path(ca_cert) if ca_cert else None,
+        ca_cert_dir=pathlib.Path(ca_path) if ca_path else None,
+        client_cert=pathlib.Path(client_cert) if client_cert else None,
+        client_key=pathlib.Path(client_key) if client_key else None,
     )
 
+    slack_url = os.getenv("SLACK_WEBHOOK_URL_CONSUL")
+    return monitor.consul_checks_to_slack(time_zone, cloud_name, conn, slack_url)
+
+
+def build():
+    parser = argparse.ArgumentParser(
+        prog=common.APP_NAME_DASH,
+        description="Run a check on the local machine.",
+        allow_abbrev=False,
+    )
+
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {common.get_version()}"
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Turn on debug mode.",
+    )
     subparsers = parser.add_subparsers(
         title="Available checks",
         description="Specify the check command to run",
@@ -228,15 +265,22 @@ def build():
     )
     parser_systemd_timer.set_defaults(func=systemd_timer_cli)
 
+    # subparser: consul report
+    parser_consul_report = subparsers.add_parser(
+        "consul-report",
+        help="Report the current state of all consul checks for this datacenter.",
+    )
+    add_common_arguments(parser_consul_report)
+    parser_consul_report.add_argument(
+        "cloud_name",
+        help="The name of the cloud provider.",
+    )
+    parser_consul_report.set_defaults(func=consul_report_cli)
+
     return parser
 
 
 def add_common_arguments(parser):
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Turn on debug mode.",
-    )
     parser.add_argument(
         "--time_zone",
         default="Australia/Brisbane",
