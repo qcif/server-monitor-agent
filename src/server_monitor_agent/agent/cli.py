@@ -1,9 +1,8 @@
 import argparse
 import os
 import pathlib
-import typing
 
-from server_monitor_agent.agent import consul, instance, monitor, service, common
+from server_monitor_agent.agent import common, consul, instance, monitor, service
 
 
 def memory_usage_cli(args: argparse.Namespace):
@@ -29,11 +28,13 @@ def disk_usage_cli(args: argparse.Namespace):
 def systemd_service_cli(args: argparse.Namespace):
     time_zone = args.time_zone
     name = args.name
-    load_state = args.expected_load_state
-    active_state = args.expected_active_state
-    file_state = args.expected_file_state
-    sub_state = args.expected_sub_state
-    result_state = args.expected_result_state
+    expected_type = service.SERVICE_EXPECTED_STATES[args.expected_type]
+    load_state = expected_type["load"]
+    active_state = expected_type["active"]
+    file_state = expected_type["file"]
+    sub_state = expected_type["sub"]
+    result_state = expected_type["result"]
+    exec_main_status = expected_type["ExecMainStatus"]
     max_age_hours = args.max_age_hours
     return service.service_detail(
         time_zone,
@@ -43,6 +44,7 @@ def systemd_service_cli(args: argparse.Namespace):
         file_state,
         sub_state,
         result_state,
+        exec_main_status,
         max_age_hours,
     )
 
@@ -50,11 +52,12 @@ def systemd_service_cli(args: argparse.Namespace):
 def systemd_timer_cli(args: argparse.Namespace):
     time_zone = args.time_zone
     name = args.name
-    load_state = args.expected_load_state
-    active_state = args.expected_active_state
-    file_state = args.expected_file_state
-    sub_state = args.expected_sub_state
-    result_state = args.expected_result_state
+    expected_type = service.TIMER_EXPECTED_STATES[args.expected_type]
+    load_state = expected_type["load"]
+    active_state = expected_type["active"]
+    file_state = expected_type["file"]
+    sub_state = expected_type["sub"]
+    result_state = expected_type["result"]
     return service.timer_detail(
         time_zone, name, load_state, active_state, file_state, sub_state, result_state
     )
@@ -172,56 +175,11 @@ def build():
         "name",
         help="The name of the service to check.",
     )
-    add_systemd_unit_arguments(
-        parser_systemd_service,
-        [
-            "dead",
-            "condition",
-            "start-pre",
-            "start",
-            "start-post",
-            "running",
-            "exited",
-            "reload",
-            "stop",
-            "stop-watchdog",
-            "stop-sigterm",
-            "stop-sigkill",
-            "stop-post",
-            "final-sigterm",
-            "final-sigkill",
-            "failed",
-            "auto-restart",
-            "cleaning",
-        ],
-        [
-            "start-pre",
-            "start",
-            "start-post",
-            "running",
-            "reload",
-            "auto-restart",
-        ],
-    )
     parser_systemd_service.add_argument(
-        "--expected-result-state",
-        action="extend",
-        nargs="+",
+        "expected_type",
         type=str,
-        default=list(["success"]),
-        choices=[
-            "success",
-            "protocol",
-            "timeout",
-            "exit-code",
-            "signal",
-            "core-dump",
-            "watchdog",
-            "start-limit-hit",
-            "resources",
-        ],
-        help="The expected result status of the process controlled by this service "
-        "(default 'success').",
+        choices=sorted(service.SERVICE_EXPECTED_STATES.keys()),
+        help="The expected behaviour of the service.",
     )
     parser_systemd_service.add_argument(
         "--max-age-hours",
@@ -240,28 +198,11 @@ def build():
         "name",
         help="The name of the timer to check.",
     )
-    add_systemd_unit_arguments(
-        parser_systemd_timer,
-        [
-            "dead",
-            "waiting",
-            "running",
-            "elapsed",
-            "failed",
-        ],
-        ["waiting", "running"],
-    )
     parser_systemd_timer.add_argument(
-        "--expected-result-state",
-        action="extend",
-        nargs="+",
+        "expected_type",
         type=str,
-        default=list(["success"]),
-        choices=[
-            "success",
-        ],
-        help="The expected result status of the service controlled by this timer "
-        "(default 'success').",
+        choices=sorted(service.TIMER_EXPECTED_STATES.keys()),
+        help="The expected behaviour of the timer.",
     )
     parser_systemd_timer.set_defaults(func=systemd_timer_cli)
 
@@ -285,78 +226,4 @@ def add_common_arguments(parser):
         "--time_zone",
         default="Australia/Brisbane",
         help="The timezone to use for dates and times.",
-    )
-
-
-def add_systemd_unit_arguments(
-    parser, sub_state_options: typing.List[str], sub_state_default: typing.List[str]
-):
-    # system stats - find the states using systemctl --state=help
-
-    parser.add_argument(
-        "--expected-load-state",
-        action="extend",
-        nargs="+",
-        type=str,
-        default=list(["loaded"]),
-        choices=[
-            "stub",
-            "loaded",
-            "not-found",
-            "bad-setting",
-            "error",
-            "merged",
-            "masked",
-        ],
-        help="The expected unit definition state " "(default 'loaded').",
-    )
-    parser.add_argument(
-        "--expected-file-state",
-        action="extend",
-        nargs="+",
-        type=str,
-        default=list(["enabled", "enabled-runtime"]),
-        choices=[
-            "enabled",
-            "enabled-runtime",
-            "linked",
-            "linked-runtime",
-            "masked",
-            "masked-runtime",
-            "static",
-            "disabled",
-            "indirect",
-            "generated",
-            "transient",
-            "bad",
-        ],
-        help="The expected unit file state " "(default 'enabled,enabled-runtime').",
-    )
-    parser.add_argument(
-        "--expected-active-state",
-        action="extend",
-        nargs="+",
-        type=str,
-        default=list(["active", "reloading", "activating"]),
-        choices=[
-            "active",
-            "reloading",
-            "inactive",
-            "failed",
-            "activating",
-            "deactivating",
-            "maintenance",
-        ],
-        help="The expected unit activation state "
-        "(default 'active,reloading,activating').",
-    )
-
-    parser.add_argument(
-        "--expected-sub-state",
-        action="extend",
-        nargs="+",
-        type=str,
-        default=list(sub_state_default),
-        choices=sub_state_options,
-        help=f"The expected sub-state (default '{sorted(sub_state_default)}').",
     )

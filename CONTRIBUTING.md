@@ -54,7 +54,7 @@ source .venv-test/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --upgrade -r requirements.txt
 
-SERVER_MONITOR_AGENT_VERSION='0.1.0'
+SERVER_MONITOR_AGENT_VERSION='0.2.0'
 pip install --index-url https://test.pypi.org/simple/ --no-deps server-monitor-agent==$SERVER_MONITOR_AGENT_VERSION
 ```
 

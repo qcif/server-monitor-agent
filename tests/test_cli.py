@@ -11,7 +11,7 @@ import requests
 from server_monitor_agent.agent import common
 from server_monitor_agent.entry import main
 
-expected_version = "0.1.0"
+expected_version = "0.2.0"
 
 if sys.version_info.minor >= 10:
     help_phrase_options = "options:"
@@ -144,7 +144,7 @@ def test_cli_systemd_service_ssh_check(capsys, caplog, monkeypatch):
             )
 
         m.setattr("server_monitor_agent.agent.common.execute_process", execute_process)
-        actual_exit_code = main(["systemd-service", "ssh"])
+        actual_exit_code = main(["systemd-service", "ssh", "auto-infinite"])
 
     stdout, stderr = capsys.readouterr()
     assert "*PASSING*: `ssh.service` on `" in stdout
@@ -153,7 +153,7 @@ def test_cli_systemd_service_ssh_check(capsys, caplog, monkeypatch):
     assert actual_exit_code == 0
 
 
-def test_cli_consul_resport_aws(capsys, caplog, monkeypatch, tmp_path):
+def test_cli_consul_report_aws(capsys, caplog, monkeypatch, tmp_path):
 
     os.environ["CONSUL_HTTP_ADDR"] = "https://localhost:8501"
     os.environ["CONSUL_HTTP_SSL"] = "true"

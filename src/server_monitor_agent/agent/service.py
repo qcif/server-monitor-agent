@@ -9,7 +9,60 @@ import humanize
 
 from server_monitor_agent.agent import common
 
-# TODO: put consul user into 'systemd-journal' group.
+SERVICE_EXPECTED_STATES = {
+    "auto-infinite": {
+        "description": "A continuous process that should start automatically "
+        "and continues running.",
+        "load": ["loaded"],
+        "active": ["active", "activating"],
+        "file": ["enabled"],
+        "sub": ["start-pre", "start", "start-post", "running"],
+        "result": ["success"],
+        "ExecMainStatus": [0],
+    },
+    "auto-finite-on-going": {
+        "description": "A limited-time process that should start automatically "
+        "and is treated as continuing to run.",
+        "load": ["loaded"],
+        "active": ["active", "activating"],
+        "file": ["static", "enabled"],
+        "sub": ["start-pre", "start", "start-post", "running", "exited"],
+        "result": ["success"],
+        "ExecMainStatus": [0],
+    },
+    "manual-finite-stop": {
+        "description": "A limited-time process that is started manually "
+        "and is treated as successful when stopping with exit code 0.",
+        "load": ["loaded"],
+        "active": ["inactive", "active", "activating"],
+        "file": ["static", "disabled"],
+        "sub": ["start-pre", "start", "start-post", "running", "dead"],
+        "result": ["success"],
+        "ExecMainStatus": [0],
+    },
+    "timer-finite-stop": {
+        "description": "A limited-time process that is started manually "
+        "and is treated as successful when stopping with exit code 0.",
+        "load": ["loaded"],
+        "active": ["inactive", "active", "activating"],
+        "file": ["static", "disabled"],
+        "sub": ["start-pre", "start", "start-post", "running", "dead"],
+        "result": ["success"],
+        "ExecMainStatus": [0],
+    },
+}
+
+TIMER_EXPECTED_STATES = {
+    "auto-infinite": {
+        "description": "A continuous timer that should start automatically "
+        "and trigger at pre-defined times of day.",
+        "load": ["loaded"],
+        "active": ["active", "activating"],
+        "file": ["enabled"],
+        "sub": ["waiting", "running"],
+        "result": ["success"],
+    },
+}
 
 
 def service_detail(
@@ -20,6 +73,7 @@ def service_detail(
     file_state: list[str],
     sub_state: list[str],
     result_state: list[str],
+    exec_main_status: list[int],
     max_age_hours: int,
 ):
     info = get_systemd_service_status(
@@ -31,6 +85,7 @@ def service_detail(
         file_state,
         sub_state,
         result_state,
+        exec_main_status,
         max_age_hours,
     )
 
@@ -84,6 +139,7 @@ def timer_detail(
         file_state,
         sub_state,
         result_state,
+        None,
         None,
     )
 
@@ -173,7 +229,6 @@ def timestamp_info(info: "SystemdServiceInfo", key: str) -> typing.Tuple[str, st
         ts = dateparser.parse(ts_str.strip())
         diff_str, diff_ts = timestamp_diff(ts, info.timestamp_now)
     else:
-        ts = SystemdServiceInfo.not_avail()
         diff_str = SystemdServiceInfo.not_avail()
 
     return diff_str, ts_str
@@ -192,6 +247,7 @@ class SystemdServiceInfo:
 
     unit_name: str
     data: dict
+
     expected_load_state: list[str]
     actual_load_state: str
     match_load_state: bool
@@ -212,6 +268,10 @@ class SystemdServiceInfo:
     actual_result_state: str
     match_result_state: bool
 
+    expected_exec_main_status: typing.Optional[list[int]]
+    actual_exec_main_status: int
+    match_exec_main_status: bool
+
     timestamp_last_change_str: str
     timestamp_last_change: datetime
     timestamp_now: datetime
@@ -226,11 +286,6 @@ class SystemdServiceInfo:
 
     @property
     def problem_lines(self) -> list[str]:
-        # TODO: ExecMainCode,ExecMainStatus,StatusErrno should be compared to expected codes
-        data_keys = ["ExecMainCode", "ExecMainStatus", "StatusErrno"]
-        result_status_items = ",".join(
-            [f"{k}={self.data.get(k)}" for k in data_keys if self.data.get(k)]
-        )
         descr_lines = [
             f"State last changed '{self.timestamp_last_change_str}' "
             f"({self.timespan_str}).",
@@ -239,7 +294,7 @@ class SystemdServiceInfo:
             f"Active state is '{self.actual_active_state}' (expected {self.expected_active_state}).",
             f"Sub state is '{self.actual_sub_state}' (expected {self.expected_sub_state}).",
             f"Result is '{self.actual_result_state}' (expected {self.expected_result_state}).",
-            f"Additional properties are {result_status_items}.",
+            f"Exec main status is '{self.actual_exec_main_status}' (expected {self.expected_exec_main_status}).",
             "",
             "Logs:",
         ] + self.logs
@@ -254,7 +309,8 @@ class SystemdServiceInfo:
             f"and file is '{self.actual_file_state}'.",
             f"Active state is '{self.actual_active_state}' "
             f"and sub state is '{self.actual_sub_state}'.",
-            f"Result is '{self.actual_result_state}'.",
+            f"Exec main status is '{self.actual_exec_main_status}' "
+            f"and result is '{self.actual_result_state}'.",
         ]
         return descr_lines
 
@@ -267,6 +323,7 @@ class SystemdServiceInfo:
                 self.match_file_state,
                 self.match_sub_state,
                 self.match_result_state,
+                self.match_exec_main_status,
             ]
         )
 
@@ -280,6 +337,7 @@ def get_systemd_service_status(
     file_state: list[str],
     sub_state: list[str],
     result_state: list[str],
+    exec_main_status: typing.Optional[list[int]],
     max_age_hours: typing.Optional[int],
 ):
     suffix = pathlib.Path(name).suffix
@@ -311,6 +369,14 @@ def get_systemd_service_status(
         if (actual_result_state and result_state)
         else True
     )
+
+    actual_exec_main_status = int(data.get("ExecMainStatus", "-1") or "-1")
+    if exec_main_status:
+        match_exec_main_status = actual_exec_main_status in exec_main_status
+    else:
+        exec_main_status = [0]
+        actual_exec_main_status = 0
+        match_exec_main_status = True
 
     # date time
     datetime_now = datetime.now(ZoneInfo(time_zone))
@@ -359,21 +425,24 @@ def get_systemd_service_status(
         max_age_hours=max_age_hours,
         unit_name=unit_name,
         data=data,
+        expected_load_state=load_state,
         actual_load_state=actual_load_state,
         match_load_state=match_load_state,
+        expected_active_state=active_state,
         actual_active_state=actual_active_state,
         match_active_state=match_active_state,
+        expected_file_state=file_state,
         actual_file_state=actual_file_state,
         match_file_state=match_file_state,
+        expected_sub_state=sub_state,
         actual_sub_state=actual_sub_state,
         match_sub_state=match_sub_state,
+        expected_result_state=result_state,
         actual_result_state=actual_result_state,
         match_result_state=match_result_state,
-        expected_load_state=load_state,
-        expected_active_state=active_state,
-        expected_file_state=file_state,
-        expected_sub_state=sub_state,
-        expected_result_state=result_state,
+        expected_exec_main_status=exec_main_status,
+        actual_exec_main_status=actual_exec_main_status,
+        match_exec_main_status=match_exec_main_status,
         timestamp_last_change_str=timestamp_str,
         timestamp_last_change=timestamp_date,
         timestamp_now=datetime_now,
