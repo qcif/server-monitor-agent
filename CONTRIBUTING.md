@@ -54,7 +54,7 @@ source .venv-test/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --upgrade -r requirements.txt
 
-SERVER_MONITOR_AGENT_VERSION='0.2.0'
+SERVER_MONITOR_AGENT_VERSION='0.3.0'
 pip install --index-url https://test.pypi.org/simple/ --no-deps server-monitor-agent==$SERVER_MONITOR_AGENT_VERSION
 ```
 
@@ -65,7 +65,8 @@ server-monitor-agent --version
 server-monitor-agent --help
 server-monitor-agent memory
 server-monitor-agent cpu
-server-monitor-agent systemd-service 
+server-monitor-agent systemd-service --help
+server-monitor-agent consul-report aws
 ```
 
 If the package seems to work as expected, upload it to the live PyPI.
