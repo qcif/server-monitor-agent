@@ -120,7 +120,7 @@ def consul_api_health_checks_any(conn: ConsulConnection) -> typing.List[typing.D
 
 def consul_api_status_leader(conn: ConsulConnection) -> str:
     req = conn.api("status/leader")
-    return req.text
+    return req.text.strip("\"' ")
 
 
 def aws_instance_private_ipv4() -> str:
