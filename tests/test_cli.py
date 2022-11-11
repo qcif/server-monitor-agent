@@ -211,7 +211,7 @@ def test_cli_consul_report_aws(capsys, caplog, monkeypatch, tmp_path):
                 resp.encoding = "utf-8"
 
                 resp.raw = io.BytesIO()
-                resp.raw.write("127.0.0.1:8300".encode(resp.encoding))
+                resp.raw.write('"127.0.0.1:8300"'.encode(resp.encoding))
                 resp.raw.seek(0)
                 return resp
             if (
@@ -246,6 +246,7 @@ def test_cli_consul_report_aws(capsys, caplog, monkeypatch, tmp_path):
 
     stdout, stderr = capsys.readouterr()
     assert "*PASSING*: `consul-report` on `" in stdout
+    assert "This instance is the consul leader. Sending report to Slack." in stdout
     assert stderr == ""
     assert caplog.record_tuples == []
     assert actual_exit_code == 0

@@ -8,18 +8,29 @@ def consul_checks_to_slack(
     time_zone: str, cloud_name: str, conn: consul.ConsulConnection, slack_url: str
 ):
     slack_items, entries = consul_check_report(time_zone, cloud_name, conn)
-    slack_text = "\n".join(slack_items)
 
     consul_leader_ipv4_port = consul.consul_api_status_leader(conn)
     instance_ipv4 = consul.aws_instance_private_ipv4()
 
     is_leader = consul_leader_ipv4_port.startswith(instance_ipv4)
+    if is_leader:
+        consul_leader_text = (
+            "This instance is the consul leader. Sending report to Slack."
+        )
+    else:
+        consul_leader_text = (
+            "This instance is not the consul leader. Not sending report."
+        )
+
+    slack_text = "\n".join(slack_items + [consul_leader_text])
 
     if is_leader:
         if slack_url and slack_text:
             slack.slack_webhook(slack_url, slack_text)
         else:
-            raise ValueError(f"Invalid slack url '{slack_url or ''}' or text.")
+            raise ValueError(
+                f"Invalid slack url '{slack_url or ''}' or no report text."
+            )
 
     return common.report_ok(
         time_zone=time_zone,
