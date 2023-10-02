@@ -51,7 +51,7 @@ jobs:
         uses: github/codeql-action/analyze@v2
 
       - name: Run pip audit
-        uses: pypa/gh-action-pip-audit@v1.0.6
+        uses: pypa/gh-action-pip-audit@v1.0.8
         continue-on-error: true
         with:
           inputs: requirements.txt requirements-dev.txt
