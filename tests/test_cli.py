@@ -1,197 +1,252 @@
+import io
 import json
+import os
 import pathlib
-from unittest.mock import call
+import subprocess
+import sys
 
 import pytest
-from click.testing import CliRunner
+import requests
 
-from conftest import svmem
-from tests.data import expected_commands as ex_cmd
-from tests.helpers import execute_process_side_effect
+from server_monitor_agent.agent import common
+from server_monitor_agent.entry import main
+
+expected_version = "0.3.0"
+
+if sys.version_info.minor >= 10:
+    help_phrase_options = "options:"
+else:
+    help_phrase_options = "optional arguments:"
 
 
-@pytest.mark.parametrize("collect_cmd,send_cmd", ex_cmd.expected_items["pairs"])
-def test_cli_commands(tmp_path, collect_cmd, send_cmd, capsys, mocker, requests_mock):
-    execute_process_mock = mocker.patch(
-        "server_monitor_agent.agent.operation.execute_process", spec=True
-    )
-    execute_process_mock.side_effect = execute_process_side_effect
+PROG_HELP = (
+    "usage: server-monitor-agent [-h] [--version] [--debug] check_command ...\n"
+    "\n"
+    "Run a check on the local machine.\n"
+    "\n"
+    f"{help_phrase_options}\n"
+    "  -h, --help       show this help message and exit\n"
+    "  --version        show program's version number and exit\n"
+    "  --debug          Turn on debug mode.\n"
+    "\n"
+    "Available checks:\n"
+    "  Specify the check command to run\n"
+    "\n"
+    "  check_command\n"
+    "    memory         Check the current memory usage.\n"
+    "    cpu            Check the current cpu usage.\n"
+    "    disk           Check the current free space for a disk.\n"
+    "    systemd-service\n"
+    "                   Check the current status of a systemd service.\n"
+    "    systemd-timer  Check the current status of a systemd timer.\n"
+    "    consul-report  Report the current state of all consul checks for this\n"
+    "                   datacenter.\n"
+)
 
-    smtp_mock = mocker.patch("smtplib.SMTP_SSL", autospec=True)
 
-    socket_fqdn_mock = mocker.patch("socket.getfqdn", spec=True)
-    socket_fqdn_mock.return_value = "test-instance.example.com"
+def test_cli_no_args(capsys, caplog):
+    actual_exit_code = main([])
+    stdout, stderr = capsys.readouterr()
+    assert stdout == ""
+    assert stderr == PROG_HELP
+    assert caplog.record_tuples == []
 
-    platform_node_mock = mocker.patch("platform.node", spec=True)
+    assert actual_exit_code == 1
 
-    pu_cpu_percent_mock = mocker.patch("psutil.cpu_percent", spec=True)
-    pu_disk_partitions_mock = mocker.patch("psutil.disk_partitions", spec=True)
-    pu_disk_usage_mock = mocker.patch("psutil.disk_usage", spec=True)
-    pu_process_iter_mock = mocker.patch("psutil.process_iter", spec=True)
-    pu_boot_time_mock = mocker.patch("psutil.boot_time", spec=True)
 
-    pu_virtual_memory_mock = mocker.patch("psutil.virtual_memory", spec=True)
+def test_cli_help(capsys, caplog):
+    with pytest.raises(SystemExit, match="0"):
+        main(["--help"])
 
-    def pu_virtual_memory_mock_side_effect(*args, **kwargs):
-        return svmem(
-            total=10367352832,
-            available=6472179712,
-            percent=37.6,
-            used=8186245120,
-            free=2181107712,
-            active=4748992512,
-            inactive=2758115328,
-            buffers=790724608,
-            cached=3500347392,
-            shared=787554304,
-            slab=199348224,
-        )
+    stdout, stderr = capsys.readouterr()
+    assert stdout == PROG_HELP
+    assert stderr == ""
+    assert caplog.record_tuples == []
 
-    pu_virtual_memory_mock.side_effect = pu_virtual_memory_mock_side_effect
 
-    pu_net_io_counters_mock = mocker.patch("psutil.net_io_counters", spec=True)
+def test_cli_version(capsys, caplog):
+    with pytest.raises(SystemExit, match="0"):
+        main(["--version"])
 
-    mocks = {
-        "execute_process": {
-            "mock": execute_process_mock,
-            "expected": [call(["timedatectl", "show"])],
-        },
-        "smtp": {"mock": smtp_mock, "expected": []},
-        "socket_fqdn": {"mock": socket_fqdn_mock, "expected": [call()]},
-        "platform_node": {"mock": platform_node_mock, "expected": []},
-        "pu_cpu_percent": {"mock": pu_cpu_percent_mock, "expected": []},
-        "pu_disk_partitions": {"mock": pu_disk_partitions_mock, "expected": []},
-        "pu_disk_usage": {"mock": pu_disk_usage_mock, "expected": []},
-        "pu_process_iter": {"mock": pu_process_iter_mock, "expected": []},
-        "pu_boot_time": {"mock": pu_boot_time_mock, "expected": []},
-        "pu_virtual_memory": {"mock": pu_virtual_memory_mock, "expected": []},
-        "pu_net_io_counters": {"mock": pu_net_io_counters_mock, "expected": []},
-    }
+    stdout, stderr = capsys.readouterr()
+    assert stdout == f"{common.APP_NAME_DASH} {expected_version}\n"
+    assert stderr == ""
+    assert caplog.record_tuples == []
 
-    from server_monitor_agent.agent import command as agent_command
 
-    runner = CliRunner(mix_stderr=False)
+def test_cli_memory(capsys, caplog):
+    actual_exit_code = main(["memory"])
 
-    with runner.isolated_filesystem(temp_dir=tmp_path) as d:
-        temp_dir = pathlib.Path(d)
-        file_input_path = temp_dir / "file-input.txt"
-        file_status_path = temp_dir / "file-status.txt"
-        file_output_path = temp_dir / "file-output.txt"
+    stdout, stderr = capsys.readouterr()
 
-        collect_available = {
-            "file-input": ["-p", file_input_path],
-            "file-status": ["-p", file_status_path],
-            "consul-checks": ["-a", "http://localhost:8500", "-e" "false"],
-            "docker-container": ["--name", "consul"],
-            "systemd-unit-status": ["--name", "docker.service"],
-            "systemd-unit-logs": ["--name", "docker.service"],
-            "web-app": ["-u", "http://localhost:8080/web-app"],
-        }
-        collect_args = [collect_cmd, *collect_available.get(collect_cmd, [])]
+    assert actual_exit_code in [0, 2]
+    if actual_exit_code == 0:
+        assert "*PASSING*: `memory` on `" in stdout
+        assert stderr == ""
+    else:
+        assert stdout == ""
+        assert "*PROBLEM*: `memory` on `" in stderr
 
-        send_available = {
-            "alert-manager": ["-u", "http://localhost:8080/alert-manager"],
-            "file-output": ["-p", file_output_path],
-            "logged-in-users": ["-g", "testers"],
-            "slack-message": ["-w", "http://localhost:8080/slack-webhook"],
-            "email-message": [
-                "-h",
-                "localhost",
-                "-p",
-                587,
-                "-u",
-                "user",
-                "-w",
-                "pass",
-                "-f",
-                "sender@example.com",
-                "-t",
-                "to1@example.com",
-                "-t",
-                "to2@example.com",
-            ],
-        }
-        send_args = [send_cmd, *send_available.get(send_cmd, [])]
+    assert caplog.record_tuples == []
 
-        # mocking - collect
-        if collect_cmd == "stream-input":
-            # monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
-            pass
 
-        if collect_cmd == "file-input":
-            (temp_dir / "file-input.txt").touch(exist_ok=True)
+def test_cli_cpu(capsys, caplog):
+    actual_exit_code = main(["cpu", "--interval", "0.5"])
 
-        if collect_cmd == "web-app":
-            requests_mock.get("http://localhost:8080/web-app")
+    stdout, stderr = capsys.readouterr()
 
-        if collect_cmd == "consul-checks":
-            requests_mock.get("http://localhost:8500/v1/health/state/any")
+    assert actual_exit_code in [0, 2]
+    if actual_exit_code == 0:
+        assert "*PASSING*: `cpu` on `" in stdout
+        assert stderr == ""
+    else:
+        assert stdout == ""
+        assert "*PROBLEM*: `cpu` on `" in stderr
 
-        # mocking - send
-        if send_cmd == "slack-message":
-            requests_mock.post("http://localhost:8080/slack-webhook")
+    assert caplog.record_tuples == []
 
-        if send_cmd == "logged-in-users":
-            mocks["execute_process"]["expected"].append(
-                call(["wall", "--timeout", "30", "--group", "testers", "__MATCH_ANY__"])
+
+def test_cli_systemd_service_help(capsys, caplog):
+    with pytest.raises(SystemExit, match="0"):
+        main(["systemd-service", "--help"])
+
+    stdout, stderr = capsys.readouterr()
+    assert "usage: server-monitor-agent systemd-service" in stdout
+    assert stderr == ""
+    assert caplog.record_tuples == []
+
+
+def test_cli_systemd_service_ssh_check(capsys, caplog, monkeypatch):
+
+    data = [
+        "StatusErrno=0",
+        "Result=success",
+        "ExecMainStartTimestamp=Mon 2022-10-31 15:30:10 AEST",
+        "ExecMainCode=0",
+        "ExecMainStatus=0",
+        "LoadState=loaded",
+        "ActiveState=active",
+        "SubState=running",
+        "UnitFileState=enabled",
+        "UnitFilePreset=enabled",
+        "StateChangeTimestamp=Mon 2022-10-31 15:30:10 AEST",
+        "InactiveExitTimestamp=Mon 2022-10-31 15:30:10 AEST",
+        "ActiveEnterTimestamp=Mon 2022-10-31 15:30:10 AEST",
+        "ConditionTimestamp=Mon 2022-10-31 15:30:10 AEST",
+        "AssertTimestamp=Mon 2022-10-31 15:30:10 AEST",
+    ]
+
+    with monkeypatch.context() as m:
+
+        def execute_process(*args, **kwargs):
+            return subprocess.CompletedProcess(
+                args=args, returncode=0, stdout="\n".join(data), stderr=""
             )
 
-        result = runner.invoke(
-            agent_command.cli, [*collect_args, *send_args], catch_exceptions=False
-        )
+        m.setattr("server_monitor_agent.agent.common.execute_process", execute_process)
+        actual_exit_code = main(["systemd-service", "ssh", "auto-infinite"])
 
-        # check mocks
-        for name, data in mocks.items():
-            m = data["mock"]
-            expected = data["expected"]
-
-            if len(expected) < 1:
-                m.assert_not_called()
-            else:
-                assert m.call_count == len(expected)
-
-            m.assert_has_calls(expected)
-
-        if collect_cmd == "file-status" and send_cmd == "stream-output":
-            actual = json.loads(result.stdout)
-            expected = {
-                "summary": "Unexpected file " + str(file_status_path) + " state",
-                "description": "Unexpected file " + str(file_status_path) + " state. "
-                "Could not find file in expected path.  "
-                "Check instance for excessive log files or increased application storage use.",
-                "host_name": "test-instance.example.com",
-                "source_name": "server",
-                "check_name": "file",
-                "status_name": "critical",
-                "service_name": str(file_status_path),
-                "extra_data": {"exists": False, "expected_state": "present"},
-            }
-            assert actual.get("date")
-            del actual["date"]
-            assert actual == expected
-
-        else:
-            assert result.stdout == ""
-
-        assert result.stderr == ""
-        assert result.exit_code == 0
+    stdout, stderr = capsys.readouterr()
+    assert "*PASSING*: `ssh.service` on `" in stdout
+    assert stderr == ""
+    assert caplog.record_tuples == []
+    assert actual_exit_code == 0
 
 
-# for smtp:
-# https://stackoverflow.com/questions/63754359/correct-way-to-mock-patch-smtplib-smtp
-# import unittest.mock
-# with unittest.mock.patch('smtplib.SMTP', autospec=True) as mock:
-#     import smtplib
-#     smtp = smtplib.SMTP('localhost')
-#     smtp.sendmail('me', 'you', 'hello world\n')
-#
-#     # Validate sendmail() was called
-#     name, args, kwargs = smtpmock.method_calls.pop(0)
-#     self.assertEqual(name, '().sendmail')
-#     self.assertEqual({}, kwargs)
-#
-#     # Validate the sendmail() parameters
-#     from_, to_, body_ = args
-#     self.assertEqual('me', from_)
-#     self.assertEqual(['you'], to_)
-#     self.assertIn('hello world', body_)
+def test_cli_consul_report_aws(capsys, caplog, monkeypatch, tmp_path):
+
+    os.environ["CONSUL_HTTP_ADDR"] = "https://localhost:8501"
+    os.environ["CONSUL_HTTP_SSL"] = "true"
+    os.environ["CONSUL_HTTP_SSL_VERIFY"] = "true"
+    os.environ["CONSUL_CACERT"] = str(tmp_path / "ca_cert")
+    os.environ["CONSUL_CAPATH"] = str(tmp_path / "ca_path")
+    os.environ["CONSUL_CLIENT_CERT"] = str(tmp_path / "client_cert")
+    os.environ["CONSUL_CLIENT_KEY"] = str(tmp_path / "client_key")
+    os.environ["SLACK_WEBHOOK_URL_CONSUL"] = "slack_webhook_url"
+
+    for i in [
+        "CONSUL_CACERT",
+        "CONSUL_CAPATH",
+        "CONSUL_CLIENT_CERT",
+        "CONSUL_CLIENT_KEY",
+    ]:
+        pathlib.Path(os.environ[i]).touch()
+
+    with monkeypatch.context() as m:
+
+        def request_url(*args, **kwargs):
+            if (
+                kwargs["method"] == "get"
+                and kwargs["url"] == "https://localhost:8501/v1/health/state/any"
+            ):
+                resp = requests.Response()
+                resp.url = kwargs["url"]
+                resp.status_code = 200
+                resp.encoding = "utf-8"
+
+                resp.raw = io.BytesIO()
+                resp.raw.write(
+                    json.dumps(
+                        [
+                            {
+                                "Node": "test.example.com",
+                                "Name": "Check name",
+                                "Status": "critical",
+                                "ServiceName": "Service name",
+                            }
+                        ]
+                    ).encode(resp.encoding)
+                )
+                resp.raw.seek(0)
+
+                return resp
+
+            if (
+                kwargs["method"] == "get"
+                and kwargs["url"] == "https://localhost:8501/v1/status/leader"
+            ):
+                resp = requests.Response()
+                resp.url = kwargs["url"]
+                resp.status_code = 200
+                resp.encoding = "utf-8"
+
+                resp.raw = io.BytesIO()
+                resp.raw.write('"127.0.0.1:8300"'.encode(resp.encoding))
+                resp.raw.seek(0)
+                return resp
+            if (
+                kwargs["method"] == "get"
+                and kwargs["url"]
+                == "http://169.254.169.254/latest/meta-data/local-ipv4"
+            ):
+                resp = requests.Response()
+                resp.url = kwargs["url"]
+                resp.status_code = 200
+                resp.encoding = "utf-8"
+
+                resp.raw = io.BytesIO()
+                resp.raw.write("127.0.0.1".encode(resp.encoding))
+                resp.raw.seek(0)
+                return resp
+            if kwargs["method"] == "post" and kwargs["url"] == "slack_webhook_url":
+                resp = requests.Response()
+                resp.url = kwargs["url"]
+                resp.status_code = 200
+                resp.encoding = "utf-8"
+
+                resp.raw = io.BytesIO()
+                resp.raw.seek(0)
+                return resp
+
+            raise ValueError()
+
+        m.setattr("requests.sessions.Session.request", request_url)
+
+        actual_exit_code = main(["--debug", "consul-report", "aws"])
+
+    stdout, stderr = capsys.readouterr()
+    assert "*PASSING*: `consul-report` on `" in stdout
+    assert "This instance is the consul leader. Sending report to Slack." in stdout
+    assert stderr == ""
+    assert caplog.record_tuples == []
+    assert actual_exit_code == 0

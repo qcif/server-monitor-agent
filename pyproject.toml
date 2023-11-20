@@ -1,7 +1,5 @@
 [build-system]
-requires = [
-    "setuptools>=63.0.0",
-]
+requires = ["setuptools>=63.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,43 +30,27 @@ dynamic = [
 server-monitor-agent = 'server_monitor_agent.entry:main'
 
 [tool.setuptools.packages.find]
-where = [
-    "src",
-]
+where = ["src"]
 # include and exclude accept strings representing glob patterns.
-include = [
-    "server_monitor_agent*",
-]
+include = ["server_monitor_agent*"]
 
 [tool.setuptools.dynamic]
-version = { file = [
-    "VERSION",
-] }
-dependencies = { file = [
-    "requirements.txt",
-] }
+version = { file = ["VERSION"] }
+dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools.dynamic.optional-dependencies]
-dev = { file = [
-    "requirements-dev.txt",
-] }
+dev = { file = ["requirements-dev.txt"] }
 
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra --quiet"
-pythonpath = [
-    "src",
-]
-testpaths = [
-    "tests",
-]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.coverage.run]
 # "Specifying the source option enables coverage.py to report on unexecuted files,
 # since it can search the source tree for files that haven’t been measured at all."
-source = [
-    'src',
-]
+source = ['src']
 omit = [
     '*/site-packages/*',
     'tests/*',
@@ -90,17 +72,17 @@ src_paths = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py37,py38,py39,py310,py311
-toxworkdir = {homedir}/tox-app
+envlist = py39,py310,py311
 
 [testenv]
-# recreate = true
+#recreate = true
 deps =
     -r requirements.txt
     -r requirements-dev.txt
 commands =
-    coverage run -m pytest --tb=no --durations=5
     server-monitor-agent --help
+    server-monitor-agent --version
+    coverage run -m pytest --tb=no --durations=5
 """
 
 [tool.pydocstyle]
