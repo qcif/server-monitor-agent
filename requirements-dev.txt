@@ -1,5 +1,5 @@
 # package management
-pip==23.3
+pip==23.3.1
 
 # build and upload package
 setuptools==65.5.1
