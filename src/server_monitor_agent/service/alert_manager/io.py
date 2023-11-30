@@ -13,5 +13,5 @@ def alert_manager_output(
 
 
 register_io = [
-    agent_model.RegisterSendOutput(alert_manager_output),
+    # agent_model.RegisterSendOutput(alert_manager_output),
 ]

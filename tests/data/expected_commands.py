@@ -14,7 +14,7 @@ expected_items = {
         {"command": "web-app", "args": "RequestUrlCollectArgs"},
     ],
     "send": [
-        {"command": "alert-manager", "args": "AlertManagerSendArgs"},
+        # {"command": "alert-manager", "args": "AlertManagerSendArgs"},
         {"command": "file-output", "args": "FileOutputSendArgs"},
         {"command": "logged-in-users", "args": "LoggedInUsersSendArgs"},
         {"command": "stream-output", "args": "StreamOutputSendArgs"},

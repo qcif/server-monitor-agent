@@ -64,7 +64,7 @@ Commands:
   file-input           Load input from a file.
   file-status          Get information about a file.
   memory               Get the memory usage.
-  statuscake           Collect information required for the statuscake agent.
+  statuscake           Collect data for the statuscake agent.
   stream-input         Read input from a stream.
   systemd-unit-logs    Get the logs for a systemd unit.
   systemd-unit-status  Get the status of a systemd unit.
@@ -92,7 +92,10 @@ def test_gather_commands():
         assert i.group.name in expected_collect_cmds
 
     send_commands = reg.send_commands
-    assert len(send_commands) == len(expected_send)
+
+    send_cmd_names = sorted(i.command.name for i in send_commands)
+    expected_cmd_names = sorted(i.get('command') for i in expected_send)
+    assert send_cmd_names == expected_cmd_names
 
     for i in send_commands:
         assert i.command.name in expected_send_cmds
@@ -109,7 +112,9 @@ def test_gather_io():
     reg.gather()
 
     collect_items = reg.collect_inputs
-    assert len(collect_items) == len(expected_collect)
+    collect_item_names = sorted(i.func.__name__ for i in collect_items)
+    expected_collect_names = sorted(i.get('command') for i in expected_collect)
+    assert len(collect_item_names) == len(expected_collect_names), f"{collect_item_names} != {expected_collect_names}"
 
     for i in collect_items:
         item_inspect = inspect.signature(i.func)
@@ -117,7 +122,9 @@ def test_gather_io():
         assert item_arg_type.__name__ in expected_collect_args
 
     send_items = reg.send_outputs
-    assert len(send_items) == len(expected_send)
+    send_item_names = sorted(i.func.__name__ for i in send_items)
+    expected_send_names = sorted(i.get('command') for i in expected_send)
+    assert len(send_item_names) == len(expected_send_names), f"{collect_item_names} != {expected_send_names}"
 
     for i in send_items:
         item_inspect = inspect.signature(i.func)
