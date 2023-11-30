@@ -72,7 +72,7 @@ def slack_message_output(
     # descr = "\n".join([i for i in [item.title, item.description] if i and i.strip()])
     # notify_str = f"{emoji2}  *The check for {item.name} is {item.status}.*"
     #
-    # if isinstance(item.date.tzinfo, ZoneInfo):
+    # if isinstance(item.date.tzinfo, zoneinfo.ZoneInfo):
     #     time_zone = str(item.date.tzinfo)
     # elif isinstance(item.date.tzinfo, StaticTzInfo):
     #     time_zone = item.date.tzinfo.tzname(None)

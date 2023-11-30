@@ -2,6 +2,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -11,7 +12,7 @@ import requests
 from server_monitor_agent.agent import common
 from server_monitor_agent.entry import main
 
-expected_version = "0.3.2"
+expected_version = "0.4.0"
 
 if sys.version_info.minor >= 10:
     help_phrase_options = "options:"
@@ -43,12 +44,16 @@ PROG_HELP = (
     "                   datacenter.\n"
 )
 
+_collapse_whitespace_re = re.compile(r'\s+')
+def _collapse_whitespace(data: str) -> str:
+    return _collapse_whitespace_re.sub(' ', data)
+
 
 def test_cli_no_args(capsys, caplog):
     actual_exit_code = main([])
     stdout, stderr = capsys.readouterr()
     assert stdout == ""
-    assert stderr == PROG_HELP
+    assert _collapse_whitespace(stderr) == _collapse_whitespace(PROG_HELP)
     assert caplog.record_tuples == []
 
     assert actual_exit_code == 1
@@ -59,7 +64,7 @@ def test_cli_help(capsys, caplog):
         main(["--help"])
 
     stdout, stderr = capsys.readouterr()
-    assert stdout == PROG_HELP
+    assert _collapse_whitespace(stdout) == _collapse_whitespace(PROG_HELP)
     assert stderr == ""
     assert caplog.record_tuples == []
 

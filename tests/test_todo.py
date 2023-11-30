@@ -1,7 +1,7 @@
 # import json
 # import logging
 # import re
-# from importlib.resources import files, as_file
+# from importlib_resources import files, as_file
 # from subprocess import CompletedProcess
 #
 # from server_monitor_agent.common import ProgramMixin
@@ -413,7 +413,7 @@
 #     )
 
 # import logging
-# from importlib.resources import files, as_file
+# from importlib_resources import files, as_file
 # from pathlib import Path
 #
 # import pytest
@@ -610,7 +610,7 @@
 # import io
 # import logging
 # from datetime import datetime
-# from importlib.resources import files, as_file
+# from importlib_resources import files, as_file
 # from subprocess import CompletedProcess
 # from tempfile import NamedTemporaryFile
 #

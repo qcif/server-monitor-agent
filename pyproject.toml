@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "server-monitor-agent"
 description = "Utility to run checks on a server and send notifications."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
@@ -72,17 +72,19 @@ src_paths = [
 legacy_tox_ini = """
 [tox]
 isolated_build = True
-envlist = py39,py310,py311
+envlist = py38,py39,py310,py311,py312
 
 [testenv]
 #recreate = true
 deps =
     -r requirements.txt
     -r requirements-dev.txt
+set_env =
+    PYTHONDEVMODE=1
 commands =
     server-monitor-agent --help
     server-monitor-agent --version
-    coverage run -m pytest --tb=no --durations=5
+    coverage run -m pytest --tb=long --durations=5
 """
 
 [tool.pydocstyle]

@@ -32,6 +32,4 @@ types-PyYAML
 types-requests
 types-backports
 types-urllib3
-pyre-check; platform_system != "Windows"
 openapi-python-client
-pytype;python_version<"3.9"

@@ -8,5 +8,6 @@ PyYAML==6.0.1
 boltons==23.1.1
 click==8.1.7
 beartype==0.16.4
-importlib_metadata; python_version<"3.8"
+importlib-resources
+importlib-metadata
 backports.zoneinfo[tzdata];python_version<"3.9"

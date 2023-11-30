@@ -19,6 +19,6 @@ updates:
       interval: "weekly"
     target-branch: "main"
     commit-message:
-      prefix: "pip stable"
+      prefix: "pip runtime"
       prefix-development: "pip dev"
     open-pull-requests-limit: 3

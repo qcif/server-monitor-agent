@@ -3,7 +3,7 @@ import functools
 import importlib
 import inspect
 import logging
-from importlib import resources
+import importlib_resources
 
 import beartype
 import click
@@ -23,12 +23,12 @@ class BaseRegistry(abc.ABC):
 
     @functools.cached_property
     @beartype.beartype
-    def package_dir(self) -> importlib.abc.Traversable:
-        return resources.files(self.package_name)
+    def package_dir(self):
+        return importlib_resources.files(self.package_name)
 
     @functools.cached_property
     @beartype.beartype
-    def service_dir(self) -> importlib.abc.Traversable:
+    def service_dir(self):
         return self.package_dir / "service"
 
     @beartype.beartype

@@ -1,8 +1,13 @@
+from __future__ import annotations
 import dataclasses
 import pathlib
 import typing
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
 
 import dateparser
 import humanize
@@ -379,7 +384,7 @@ def get_systemd_service_status(
         match_exec_main_status = True
 
     # date time
-    datetime_now = datetime.now(ZoneInfo(time_zone))
+    datetime_now = datetime.now(zoneinfo.ZoneInfo(time_zone))
     timestamp_str, timestamp_date = timestamp_unit(data)
 
     if timestamp_date:

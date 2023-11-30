@@ -1,5 +1,9 @@
 from datetime import datetime
-from zoneinfo import ZoneInfo
+
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
 
 from server_monitor_agent.agent import common, consul, slack
 
@@ -49,7 +53,7 @@ def consul_check_report(time_zone: str, cloud_name: str, conn: consul.ConsulConn
         key=lambda x: sort_checks(x.get("Node"), x.get("ServiceName"), x.get("Name")),
     )
 
-    report_date = datetime.now(ZoneInfo(time_zone)).strftime(
+    report_date = datetime.now(zoneinfo.ZoneInfo(time_zone)).strftime(
         "%a, %d %b %Y at %H:%M:%S %z"
     )
 

@@ -4,8 +4,13 @@ import socket
 import subprocess
 import typing
 from datetime import datetime
-from importlib import metadata, resources
-from zoneinfo import ZoneInfo
+import importlib_resources
+import importlib_metadata
+
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
 
 APP_NAME_DASH = "server-monitor-agent"
 APP_NAME_UNDER = "server_monitor_agent"
@@ -26,14 +31,14 @@ def get_hostname() -> str:
 def get_version() -> typing.Optional[str]:
     """Get the version of this package."""
     try:
-        dist = metadata.distribution(APP_NAME_DASH)
+        dist = importlib_metadata.distribution(APP_NAME_DASH)
         return dist.version
-    except metadata.PackageNotFoundError:
+    except importlib_metadata.PackageNotFoundError:
         # ignore error
         pass
 
     try:
-        with resources.path(APP_NAME_UNDER, "entry.py") as p:
+        with importlib_resources.path(APP_NAME_UNDER, "entry.py") as p:
             return (p.parent.parent.parent / "VERSION").read_text().strip()
     except FileNotFoundError:
         # ignore error
@@ -69,7 +74,7 @@ class CheckReport(abc.ABC):
     description: str
 
     def __post_init__(self):
-        self._timestamp_formatted = datetime.now(ZoneInfo(self.time_zone)).isoformat(
+        self._timestamp_formatted = datetime.now(zoneinfo.ZoneInfo(self.time_zone)).isoformat(
             timespec="seconds"
         )
 

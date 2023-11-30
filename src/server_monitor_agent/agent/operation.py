@@ -8,15 +8,8 @@ import click
 import yaml
 from beartype import typing
 
-try:
-    from importlib import metadata
-except ImportError:
-    import importlib_metadata as metadata
-
-try:
-    from importlib import resources
-except ImportError:
-    import importlib_resources as resources
+import importlib_resources
+import importlib_metadata
 
 from server_monitor_agent.agent import model as agent_model
 
@@ -100,14 +93,14 @@ def report_evaluate(value: float, test: float) -> typing.Tuple[str, str]:
 def get_version() -> typing.Optional[str]:
     """Get the version of this package."""
     try:
-        dist = metadata.distribution(agent_model.APP_NAME_DASH)
+        dist = importlib_metadata.distribution(agent_model.APP_NAME_DASH)
         return dist.version
-    except metadata.PackageNotFoundError:
+    except importlib_metadata.PackageNotFoundError:
         # ignore error
         pass
 
     try:
-        with resources.path(agent_model.APP_NAME_UNDER, "entry.py") as p:
+        with importlib_resources.path(agent_model.APP_NAME_UNDER, "entry.py") as p:
             return (p.parent.parent.parent / "VERSION").read_text().strip()
     except FileNotFoundError:
         # ignore error

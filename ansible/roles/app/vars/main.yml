@@ -9,10 +9,11 @@ ubuntu_apt_source_mirror_security: http://security.ubuntu.com/ubuntu
 ubuntu_package_source_file: /etc/apt/sources.list
 
 python_versions:
-  - '3.7'
+  - '3.8'
   - '3.9'
   - '3.10'
   - '3.11'
+  - '3.12'
 
 # general
 guest_data_dir: "/home/{{ guest_user_name }}/data"
