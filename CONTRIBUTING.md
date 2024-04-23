@@ -39,10 +39,7 @@ Upload archives to Test PyPI first.
 python -X dev -m twine upload --repository testpypi dist/*
 ```
 
-When uploading:
-
-- for username, use `__token__`
-- for password, create a token at https://test.pypi.org/manage/account/#api-tokens
+When uploading use a token created at https://test.pypi.org/manage/account/#api-tokens
 
 Go to the [test project page](https://test.pypi.org/project/server-monitor-agent) and check that it looks ok.
 
@@ -54,7 +51,7 @@ source .venv-test/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --upgrade -r requirements.txt
 
-SERVER_MONITOR_AGENT_VERSION='0.4.0'
+SERVER_MONITOR_AGENT_VERSION='0.5.0'
 pip install --index-url https://test.pypi.org/simple/ --no-deps server-monitor-agent==$SERVER_MONITOR_AGENT_VERSION
 ```
 
@@ -75,10 +72,7 @@ If the package seems to work as expected, upload it to the live PyPI.
 python -X dev -m twine upload dist/*
 ```
 
-When uploading:
-
-- for username, use `__token__`
-- for password, create a token at https://pypi.org/manage/account/#api-tokens
+When uploading use a token created at https://pypi.org/manage/account/#api-tokens
 
 Go to the [live project page](https://pypi.org/project/server-monitor-agent) and check that it looks ok.
 

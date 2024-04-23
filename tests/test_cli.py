@@ -12,7 +12,7 @@ import requests
 from server_monitor_agent.agent import common
 from server_monitor_agent.entry import main
 
-expected_version = "0.4.0"
+expected_version = "0.5.0"
 
 if sys.version_info.minor >= 10:
     help_phrase_options = "options:"
