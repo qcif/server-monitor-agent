@@ -9,7 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "main"
+    target-branch: "develop"
     open-pull-requests-limit: 3
 
   # Maintain dependencies for pip packages
@@ -17,7 +17,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "main"
+    target-branch: "develop"
     commit-message:
       prefix: "pip runtime"
       prefix-development: "pip dev"
