@@ -124,7 +124,18 @@ def consul_api_status_leader(conn: ConsulConnection) -> str:
 
 
 def aws_instance_private_ipv4() -> str:
-    req = requests.get("http://169.254.169.254/latest/meta-data/local-ipv4")
-    if req.status_code != 200:
-        raise ValueError(f"AWS instance metadata error {req.status_code}: {req.text}")
-    return req.text
+    # EC2 instance metadata IMDSv2
+    # TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
+    # Use 30 minutes instead = 1800 seconds
+    token_headers = {"X-aws-ec2-metadata-token-ttl-seconds": "1800"}
+    token_req = requests.put(url="http://169.254.169.254/latest/api/token", headers=token_headers)
+    if token_req.status_code != 200:
+        raise ValueError(f"AWS instance metadata token error {token_req.status_code}: {token_req.text}")
+
+    # && curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/
+    data_token = {"X-aws-ec2-metadata-token": token_req.text}
+    data_req = requests.get(url="http://169.254.169.254/latest/meta-data/local-ipv4", headers=data_token)
+    if data_req.status_code != 200:
+        raise ValueError(f"AWS instance metadata data error {data_req.status_code}: {data_req.text}")
+
+    return data_req.text

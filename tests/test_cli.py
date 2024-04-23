@@ -220,6 +220,20 @@ def test_cli_consul_report_aws(capsys, caplog, monkeypatch, tmp_path):
                 resp.raw.seek(0)
                 return resp
             if (
+                kwargs["method"] == "put"
+                and kwargs["url"]
+                == "http://169.254.169.254/latest/api/token"
+            ):
+                resp = requests.Response()
+                resp.url = kwargs["url"]
+                resp.status_code = 200
+                resp.encoding = "utf-8"
+
+                resp.raw = io.BytesIO()
+                resp.raw.write("aws-ec2-instance-metadata-token".encode(resp.encoding))
+                resp.raw.seek(0)
+                return resp
+            if (
                 kwargs["method"] == "get"
                 and kwargs["url"]
                 == "http://169.254.169.254/latest/meta-data/local-ipv4"
