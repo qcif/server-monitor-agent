@@ -145,6 +145,10 @@ def cpu_usage(interval: float = 2.0) -> float:
 def processes() -> typing.List[server_model.ProcessResult]:
     """Get a list of the local processes."""
 
+    # Note: Linux doesn't seem to expose easily usable per-process network stats.
+    #       Maybe `sudo lsof -niTCP` combined with `iftop`?
+    #       See https://github.com/giampaolo/psutil/issues/1900
+
     result = []
     attrs = {
         "pid": "PID",
@@ -154,6 +158,8 @@ def processes() -> typing.List[server_model.ProcessResult]:
         "cpu_percent": "%CPU",
         "memory_info": ["VSZ", "RSS"],
         "username": "USER",
+        "io_counters": "",
+        "cpu_times": "",
     }
     count = 0
     for p in psutil.process_iter(attrs=list(attrs.keys()), ad_value=None):
@@ -168,9 +174,15 @@ def processes() -> typing.List[server_model.ProcessResult]:
         vms = info.get("memory_info").vms if info.get("memory_info") else 0
         rss = info.get("memory_info").rss if info.get("memory_info") else 0
 
+        # ignore a process that is using no memory
+        if (vms + rss) < 1:
+            continue
+
+        # note that memory percent can be 0 if there is no previous information
         mem_raw = info.get("memory_percent")
         mem_p = round(mem_raw, 1) if mem_raw is not None else None
 
+        # note that cpu percent can be 0 if there is no previous information
         cpu_raw = info.get("cpu_percent")
         cpu_p = round(cpu_raw, 1) if cpu_raw is not None else None
 
@@ -178,6 +190,17 @@ def processes() -> typing.List[server_model.ProcessResult]:
             cmdline = " ".join(info["cmdline"])
         else:
             cmdline = info.get("name")
+
+        io_counters = info.get("io_counters")
+        io_read_ops_count = io_counters.read_count
+        io_write_ops_count = io_counters.write_count
+        io_read_bytes_count = io_counters.read_bytes
+        io_write_bytes_count = io_counters.write_bytes
+
+        cpu_times = info.get("cpu_times")
+        cpu_time_count = cpu_times.user + cpu_times.system
+
+        cpu_usable_count = len(p.cpu_affinity())
 
         result.append(
             server_model.ProcessResult(
@@ -189,6 +212,12 @@ def processes() -> typing.List[server_model.ProcessResult]:
                 vms=vms,
                 rss=rss,
                 cmdline=cmdline,
+                io_read_ops_count=io_read_ops_count,
+                io_write_ops_count=io_write_ops_count,
+                io_read_bytes_count=io_read_bytes_count,
+                io_write_bytes_count=io_write_bytes_count,
+                cpu_time_count=cpu_time_count,
+                cpu_usable_count=cpu_usable_count,
             )
         )
 

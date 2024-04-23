@@ -82,10 +82,26 @@ class ProcessResult(agent_model.OpResult):
     user: typing.Optional[str] = None
     pid: typing.Optional[int] = None
     cpu_percent: typing.Optional[float] = None
+    """gauge of percent of total system cpu usage since last call"""
     mem_percent: typing.Optional[float] = None
+    """gauge of percent of total system memory used by process rss"""
     vms: typing.Optional[int] = None
+    """gauge of 'Virtual Memory Size', the total amount of virtual memory used by a process"""
     rss: typing.Optional[int] = None
+    """gauge of 'Resident Set Size', the non-swapped physical memory used by a process"""
     cmdline: typing.Optional[str] = None
+    io_read_ops_count: typing.Optional[int] = None
+    """counter (cumulative) of number of process I/O read operations"""
+    io_write_ops_count: typing.Optional[int] = None
+    """counter (cumulative) of number of process I/O write operations"""
+    io_read_bytes_count: typing.Optional[int] = None
+    """counter (cumulative) of number of process I/O bytes read"""
+    io_write_bytes_count: typing.Optional[int] = None
+    """counter (cumulative) of number of process I/O bytes written"""
+    cpu_time_count: typing.Optional[float] = None
+    """counter (cumulative) of cpu time used by system and user"""
+    cpu_usable_count: typing.Optional[int] = None
+    """gauge of number of cpus process can use"""
 
 
 @beartype.beartype
