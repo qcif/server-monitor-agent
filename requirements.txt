@@ -1,4 +1,4 @@
-requests==2.32.2
+requests==2.32.3
 psutil==5.9.8
 dateparser==1.2.0
 humanize==4.9.0
