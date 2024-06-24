@@ -1,5 +1,5 @@
 requests==2.32.3
-psutil==5.9.8
+psutil==6.0.0
 dateparser==1.2.0
 humanize==4.9.0
 tzdata==2024.1
