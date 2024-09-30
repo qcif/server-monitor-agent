@@ -7,7 +7,7 @@ colorama==0.4.6
 PyYAML==6.0.2
 boltons==24.0.0
 click==8.1.7
-beartype==0.18.5
+beartype==0.19.0
 importlib-resources
 importlib-metadata
 backports.zoneinfo[tzdata];python_version<"3.9"
