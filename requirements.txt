@@ -2,7 +2,7 @@ requests==2.32.3
 psutil==5.9.8
 dateparser==1.2.0
 humanize==4.10.0
-tzdata==2024.1
+tzdata==2024.2
 colorama==0.4.6
 PyYAML==6.0.2
 boltons==24.0.0
